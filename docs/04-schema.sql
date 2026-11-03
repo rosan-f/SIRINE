@@ -1,4 +1,4 @@
--- SuaraTanggap: skema MySQL (MVP)
+-- SIRINE: skema MySQL (MVP)
 -- Referensi cepat. Di Laravel tetap ditulis sebagai migration oleh Dev B.
 
 CREATE TABLE admins (

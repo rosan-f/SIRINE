@@ -2,7 +2,7 @@ import { Link } from '@inertiajs/react';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** Satu-satunya CTA utama SIGAP: selalu mengarah ke /lapor (Web Chatbot). */
+/** Satu-satunya CTA utama SIRINE: selalu mengarah ke /lapor (Web Chatbot). */
 export function LaporButton({
     tone = 'dark',
     size = 'md',

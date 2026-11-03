@@ -120,7 +120,7 @@ export function ChatWindow({
     return (
         <div
             role="group"
-            aria-label="Contoh percakapan dengan asisten SIGAP"
+            aria-label="Contoh percakapan dengan asisten SIRINE"
             className={cn(
                 'overflow-hidden rounded-[28px] border border-white/10 bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]',
                 className,
@@ -132,7 +132,7 @@ export function ChatWindow({
                 </span>
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-sg-900">
-                        Asisten SIGAP
+                        Asisten SIRINE
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-sg-text">
                         <span className="relative flex size-2">

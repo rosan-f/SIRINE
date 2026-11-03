@@ -215,7 +215,7 @@ export default function Dashboard({
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Dashboard Pemantauan SIGAP
+                            Dashboard Pemantauan SIRINE
                         </h1>
                         <p className="mt-1 max-w-xl text-sm text-muted-foreground">
                             Pantau laporan darurat yang masuk melalui bot Telegram dan kendalikan proses integrasi secara terpusat.
@@ -435,7 +435,7 @@ export default function Dashboard({
                                     className="flex-1 min-h-120 max-h-140 overflow-y-auto bg-neutral-950 p-4 font-mono text-xs text-neutral-300 leading-relaxed space-y-1 rounded-b-xl selection:bg-neutral-800"
                                 >
                                     <div className="text-neutral-500 pb-2 border-b border-neutral-800 mb-2 flex items-center justify-between">
-                                        <span>Terminal SIGAP Daemon Poller</span>
+                                        <span>Terminal SIRINE Daemon Poller</span>
                                         <span>Status: {isRunning ? 'RUNNING' : 'STOPPED'}</span>
                                     </div>
 

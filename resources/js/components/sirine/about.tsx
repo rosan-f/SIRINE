@@ -33,9 +33,9 @@ export function About() {
                 <Reveal className="lg:col-span-6 lg:pr-8">
                     <SectionHeading
                         id="tentang-title"
-                        eyebrow="Tentang SIGAP"
+                        eyebrow="Tentang SIRINE"
                         title="Informasi kejadian dimulai dari satu laporan yang jelas."
-                        description="SIGAP adalah platform pelaporan kejadian yang dirancang untuk mempermudah masyarakat menyampaikan informasi. Dengan dukungan kecerdasan buatan, informasi dibantu dikumpulkan dan disusun agar lebih mudah ditinjau."
+                        description="SIRINE (Sistem Informasi Respons Insiden dan Notifikasi Emergency) menggunakan simbol sirene sebagai pengingat pentingnya respons saat keadaan darurat. Sistem ini membantu masyarakat menyampaikan informasi insiden agar lebih mudah ditinjau dan ditangani."
                     />
 
                     <dl className="mt-12 grid gap-x-8 gap-y-8 sm:grid-cols-2">
@@ -69,7 +69,7 @@ export function About() {
                             <span className="h-px flex-1 border-t border-dashed border-sg-500/40" />
                             <span className="font-data inline-flex items-center gap-2 rounded-full bg-sg-900 px-3.5 py-1.5 text-[10px] tracking-wider text-sg-mint uppercase">
                                 <Sparkles className="size-3.5" />
-                                SIGAP merapikan
+                                SIRINE merapikan
                                 <ArrowDown className="size-3.5" />
                             </span>
                             <span className="h-px flex-1 border-t border-dashed border-sg-500/40" />

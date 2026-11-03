@@ -42,7 +42,7 @@ export function Navbar() {
             >
                 <a
                     href="#beranda"
-                    aria-label="SIGAP — ke awal halaman"
+                    aria-label="SIRINE — ke awal halaman"
                     className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sg-mint"
                 >
                     <Logo tone={light ? 'dark' : 'light'} />

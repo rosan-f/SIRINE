@@ -1,4 +1,4 @@
-# SuaraTanggap: Use Case
+# SIRINE: Use Case
 
 ## 1. Diagram use case
 
@@ -70,9 +70,9 @@ flowchart LR
 
 ### UC-01 / UC-03 / UC-04: Mengirim laporan teks
 - **Aktor:** Pelapor
-- **Prakondisi:** Pelapor punya WhatsApp dan mengetahui nomor SuaraTanggap.
+- **Prakondisi:** Pelapor punya WhatsApp dan mengetahui nomor SIRINE.
 - **Alur utama:**
-  1. Pelapor mengirim pesan pertama ke nomor SuaraTanggap.
+  1. Pelapor mengirim pesan pertama ke nomor SIRINE.
   2. Sistem membuat/menemukan data pelapor dan membuka sesi percakapan.
   3. Chatbot mengirim template pertanyaan beserta pengingat untuk menghubungi 119.
   4. Pelapor menjawab dalam satu pesan teks.

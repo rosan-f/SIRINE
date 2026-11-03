@@ -28,12 +28,12 @@ export function Emergency() {
                                 Dalam keadaan darurat, hubungi layanan resmi lebih dulu.
                             </h2>
                             <p className="mt-5 text-[15px] leading-7 text-sg-text">
-                                SIGAP merupakan sarana pendukung penyampaian dan pencatatan informasi kejadian.
+                                SIRINE merupakan sarana pendukung penyampaian dan pencatatan informasi kejadian.
                                 Apabila terjadi keadaan yang membutuhkan pertolongan segera, hubungi layanan darurat resmi di wilayah Anda.
                             </p>
                             <p className="mt-7 flex items-start gap-3 rounded-2xl bg-sg-mint-50 p-4 text-sm leading-6 font-medium text-sg-800 ring-1 ring-sg-line">
                                 <ShieldAlert className="mt-0.5 size-5 shrink-0 text-sg-600" />
-                                SIGAP bukan pengganti layanan darurat resmi.
+                                SIRINE bukan pengganti layanan darurat resmi.
                             </p>
                         </div>
 

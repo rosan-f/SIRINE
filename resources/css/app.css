@@ -148,7 +148,7 @@
 }
 
 /*
- * SIGAP landing page — token & animasi.
+ * SIRINE landing page — token & animasi.
  * Tempel isi file ini ke bagian bawah resources/css/app.css
  * (blok @theme boleh digabung dengan @theme yang sudah ada).
  */
@@ -251,7 +251,7 @@
     animation-delay: 0.3s;
 }
 
-/* Cincin sinyal — motif identitas SIGAP */
+/* Cincin sinyal — motif identitas SIRINE */
 @keyframes sg-ring {
     0% {
         transform: scale(0.6);

@@ -8,7 +8,7 @@ const heroScript: ChatMessage[] = [
     {
         id: 'h1',
         from: 'bot',
-        text: 'Halo! Selamat datang di SIGAP. Ada kejadian apa yang ingin kamu laporkan?',
+        text: 'Halo! Selamat datang di SIRINE. Ada kejadian apa yang ingin kamu laporkan?',
     },
     { id: 'h2', from: 'user', text: 'Terjadi kecelakaan di dekat pasar.' },
     {
@@ -54,14 +54,16 @@ export function Hero() {
 
             <div className="relative mx-auto grid max-w-7xl items-center gap-16 px-5 pt-32 pb-24 lg:min-h-[780px] lg:grid-cols-12 lg:gap-8 lg:px-8 lg:pt-36 lg:pb-32">
                 <div className="lg:col-span-7">
-
+                    <p className="font-data max-w-[38rem] text-xs leading-6 tracking-[0.12em] text-sg-mint uppercase sm:text-sm">
+                        Sistem Informasi Respons Insiden dan Notifikasi Emergency
+                    </p>
                     <h1
                         id="hero-title"
                         className="font-display mt-7 max-w-[17ch] text-[clamp(2.5rem,6.4vw,4.5rem)] leading-[1] font-semibold tracking-[-0.035em] text-balance text-white"
                     >
                         Ceritakan kejadiannya.{' '}
                         <span className="relative inline-block whitespace-nowrap text-sg-mint">
-                            SIGAP
+                            SIRINE
                             <svg
                                 viewBox="0 0 200 12"
                                 preserveAspectRatio="none"
@@ -79,6 +81,10 @@ export function Hero() {
                         </span>{' '}
                         yang menyusun laporannya.
                     </h1>
+
+                    <p className="mt-6 font-display text-xl font-semibold text-sg-mint md:text-2xl">
+                        Satu Peringatan, Awal Sebuah Penanganan.
+                    </p>
 
                     <p className="mt-8 max-w-[34rem] text-base leading-8 text-sg-soft md:text-lg">
                         Sampaikan kejadian lewat percakapan sederhana. Asisten

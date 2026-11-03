@@ -121,7 +121,7 @@ class GeminiService
 
         $now = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
         $prompt = <<<EOT
-Anda adalah sistem ekstraksi laporan kedaruratan SIGAP.
+Anda adalah sistem ekstraksi laporan kedaruratan SIRINE.
 Tugas Anda mengekstrak informasi kejadian dari pesan pelapor ke format JSON.
 Waktu Sekarang: {$now} WIB.
 

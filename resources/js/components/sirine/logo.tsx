@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 
 type Tone = 'light' | 'dark';
 
-/** Tanda SIGAP: balon percakapan dengan target/sinyal di tengahnya. */
+/** Tanda SIRINE: sirene sebagai simbol peringatan dan respons darurat. */
 export function LogoMark({
     tone = 'dark',
     className,
@@ -18,22 +18,25 @@ export function LogoMark({
             className={cn('size-9', className)}
         >
             <path
-                d="M11 2h10a9 9 0 0 1 9 9v6a9 9 0 0 1-9 9h-7l-6 5v-6.4A9 9 0 0 1 2 17v-6a9 9 0 0 1 9-9z"
-                className={onDark ? 'fill-sg-mint' : 'fill-sg-900'}
-            />
-            <circle
-                cx="16"
-                cy="14"
-                r="5.2"
+                d="M8 25h16m-14-3h12l-1.5-4h-9L10 22Zm2-7a6 6 0 0 1 12 0v2H10v-2Z"
+                className={onDark ? 'stroke-sg-mint' : 'stroke-sg-900'}
                 fill="none"
-                strokeWidth="2.2"
-                className={onDark ? 'stroke-sg-900' : 'stroke-sg-mint'}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M16 3v3M6.8 7.2l2.1 2.1m14.3-2.1-2.1 2.1"
+                className={onDark ? 'stroke-sg-mint' : 'stroke-sg-900'}
+                fill="none"
+                strokeWidth="2"
+                strokeLinecap="round"
             />
             <circle
                 cx="16"
-                cy="14"
-                r="1.9"
-                className={onDark ? 'fill-sg-900' : 'fill-sg-mint'}
+                cy="15"
+                r="2"
+                className={onDark ? 'fill-sg-mint' : 'fill-sg-900'}
             />
         </svg>
     );
@@ -57,7 +60,7 @@ export function Logo({
                         onDark ? 'text-white' : 'text-sg-900',
                     )}
                 >
-                    SIGAP
+                    SIRINE
                 </span>
                 <span
                     className={cn(
@@ -65,7 +68,7 @@ export function Logo({
                         onDark ? 'text-sg-soft' : 'text-sg-text/80',
                     )}
                 >
-                    Smart Incident Reporting
+                    Sistem Informasi Respons Insiden
                 </span>
             </span>
         </span>

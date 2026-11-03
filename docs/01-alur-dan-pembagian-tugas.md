@@ -1,4 +1,4 @@
-# SuaraTanggap: Alur Pengerjaan dan Pembagian Tugas (2 Orang)
+# SIRINE: Alur Pengerjaan dan Pembagian Tugas (2 Orang)
 
 ## 1. Prinsip pembagian
 

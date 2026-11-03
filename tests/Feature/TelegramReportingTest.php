@@ -70,7 +70,7 @@ test('incident report service processes 2-step flow: location then template', fu
             'chat' => [
                 'id' => $chatId,
             ],
-            'text' => "[FORMAT LAPORAN SIGAP]\n"
+            'text' => "[FORMAT LAPORAN SIRINE]\n"
                 ."Jenis Kejadian: Kebakaran toko kelontong\n"
                 ."Patokan/Alamat: Simpang 4 dekat pasar\n"
                 ."Keterangan: Asap tebal keluar dari ruko bagian depan\n"
@@ -113,7 +113,7 @@ test('authenticated user can view report show detail page with maps and route in
     ]);
 
     $report = Report::create([
-        'report_code' => 'SIGAP-TEST-001',
+        'report_code' => 'SIRINE-TEST-001',
         'reporter_id' => $reporter->id,
         'incident_type' => 'Kebakaran',
         'location_description' => 'Jl. Merdeka No. 1',
@@ -129,7 +129,7 @@ test('authenticated user can view report show detail page with maps and route in
     $response->assertOk()
         ->assertInertia(fn ($page) => $page->component('reports/show')
             ->has('report')
-            ->where('report.code', 'SIGAP-TEST-001')
+            ->where('report.code', 'SIRINE-TEST-001')
             ->where('report.latitude', -5.1802)
             ->where('report.longitude', 97.1408)
         );
@@ -154,7 +154,7 @@ test('operator can confirm report and send dispatch notification to telegram', f
     ]);
 
     $report = Report::create([
-        'report_code' => 'SIGAP-TEST-DISPATCH',
+        'report_code' => 'SIRINE-TEST-DISPATCH',
         'reporter_id' => $reporter->id,
         'incident_type' => 'Kebakaran',
         'location_description' => 'Jl. Merdeka No. 1',

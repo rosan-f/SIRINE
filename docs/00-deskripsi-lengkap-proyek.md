@@ -1,7 +1,8 @@
-# SuaraTanggap
-### Asisten Pelaporan Kejadian Berbasis WhatsApp dengan Pemeriksaan Kelengkapan oleh AI
+# SIRINE
+### Sistem Informasi Respons Insiden dan Notifikasi Emergency
 
-> **Tagline:** Sampaikan Laporan, Permudah Penanganan.
+> **Tagline:** Satu Peringatan, Awal Sebuah Penanganan.
+> **Filosofi:** Sirene menjadi simbol peringatan yang mengingatkan pentingnya respons saat terjadi keadaan darurat.
 > **Posisi:** Pelengkap layanan darurat 119, bukan pengganti.
 
 ---
@@ -10,7 +11,7 @@
 
 Saat terjadi kecelakaan atau kejadian darurat, orang yang melapor sering panik. Informasi yang disampaikan pun tidak lengkap, tidak berurutan, atau tidak jelas lokasinya. Akibatnya, pihak yang menerima laporan harus bertanya berulang kali untuk memahami situasi.
 
-**SuaraTanggap** adalah asisten pelaporan di WhatsApp yang membantu masyarakat menyampaikan kejadian secara terstruktur. Pelapor cukup bercerita lewat teks atau voice note. Sistem lalu:
+**SIRINE** adalah asisten pelaporan di WhatsApp yang membantu masyarakat menyampaikan kejadian secara terstruktur. Pelapor cukup bercerita lewat teks atau voice note. Sistem lalu:
 
 1. mengubah suara menjadi teks (jika voice note),
 2. mengekstrak informasi penting dengan AI,
@@ -28,7 +29,7 @@ Dalam situasi darurat, kemampuan seseorang menyusun informasi menurun. Pelapor m
 
 Di sisi lain, WhatsApp sudah menjadi aplikasi yang akrab bagi sebagian besar masyarakat Indonesia. Fitur seperti voice note dan Share Location sudah biasa dipakai, sehingga bisa dimanfaatkan sebagai jalur pelaporan yang tidak memerlukan pembelajaran baru.
 
-SuaraTanggap memanfaatkan dua hal tersebut: kebiasaan masyarakat memakai WhatsApp, dan kemampuan AI untuk memahami bahasa sehari-hari serta menemukan informasi yang belum lengkap.
+SIRINE memanfaatkan dua hal tersebut: kebiasaan masyarakat memakai WhatsApp, dan kemampuan AI untuk memahami bahasa sehari-hari serta menemukan informasi yang belum lengkap.
 
 ---
 
@@ -51,7 +52,7 @@ Chatbot WhatsApp yang menuntun pelapor dengan template pertanyaan di awal. Jawab
 
 ### 4.2 Yang membedakan dari chatbot biasa
 
-| Chatbot biasa | SuaraTanggap |
+| Chatbot biasa | SIRINE |
 |---|---|
 | Menerima pesan lalu membalas | Memeriksa kelengkapan informasi |
 | Pertanyaan tetap dan berulang | Hanya menanyakan bagian yang kurang |
@@ -90,7 +91,7 @@ Chatbot WhatsApp yang menuntun pelapor dengan template pertanyaan di awal. Jawab
 | **Chatbot dan AI** | Memandu dan mengolah informasi | Aturan yang jelas agar tidak mengarang |
 | **Layanan darurat** (calon mitra) | Menerima informasi yang lebih tertata | Integrasi hanya jika ada kerja sama resmi |
 
-Admin adalah pengelola dashboard SuaraTanggap. Admin bukan otomatis petugas rumah sakit, Damkar, atau operator resmi 119.
+Admin adalah pengelola dashboard SIRINE. Admin bukan otomatis petugas rumah sakit, Damkar, atau operator resmi 119.
 
 ---
 
@@ -122,7 +123,7 @@ Admin adalah pengelola dashboard SuaraTanggap. Admin bukan otomatis petugas ruma
 
 ```mermaid
 flowchart TD
-    A([Pelapor membuka WhatsApp]) --> B[Mengirim pesan ke nomor SuaraTanggap]
+    A([Pelapor membuka WhatsApp]) --> B[Mengirim pesan ke nomor SIRINE]
     B --> C[Chatbot mengirim template pertanyaan + pengingat 119]
     C --> D[Pelapor menjawab lewat teks atau voice note]
     D --> E{Voice note?}
@@ -139,7 +140,7 @@ flowchart TD
 
 ### 8.2 Contoh percakapan
 
-> **Chatbot:** Halo, selamat datang di SuaraTanggap. Silakan sampaikan jenis kejadian, waktu, lokasi, kronologi singkat, dan kondisi korban jika ada. Jika butuh pertolongan darurat, segera hubungi 119.
+> **Chatbot:** Halo, selamat datang di SIRINE. Silakan sampaikan jenis kejadian, waktu, lokasi, kronologi singkat, dan kondisi korban jika ada. Jika butuh pertolongan darurat, segera hubungi 119.
 >
 > **Pelapor (voice note, setelah ditranskripsi):** "Ada kecelakaan di Jalan Merdeka sekitar jam delapan malam, dua motor tabrakan, satu orang jatuh dan kelihatan luka."
 >
@@ -198,7 +199,7 @@ flowchart TD
 
 ## 10. Status Laporan dan Validasi
 
-**Validasi informasi** memeriksa apakah laporan lengkap dan konsisten. **Verifikasi kejadian** memastikan kejadian benar-benar terjadi oleh pihak berwenang. SuaraTanggap berfokus pada validasi kelengkapan, bukan verifikasi kebenaran.
+**Validasi informasi** memeriksa apakah laporan lengkap dan konsisten. **Verifikasi kejadian** memastikan kejadian benar-benar terjadi oleh pihak berwenang. SIRINE berfokus pada validasi kelengkapan, bukan verifikasi kebenaran.
 
 | Status | Arti |
 |---|---|
@@ -338,6 +339,6 @@ Rincian fase dan tugas ada di `01-alur-dan-pembagian-tugas.md`.
 
 ## 19. Kesimpulan
 
-SuaraTanggap membantu masyarakat menyampaikan kejadian dengan lebih lengkap tanpa perlu memahami format pelaporan. Cukup bercerita lewat WhatsApp, sistem akan menyusunnya dan menanyakan bagian yang kurang. Hasilnya adalah laporan terstruktur yang mudah ditinjau.
+SIRINE membantu masyarakat menyampaikan kejadian dengan lebih lengkap tanpa perlu memahami format pelaporan. Cukup bercerita lewat WhatsApp, sistem akan menyusunnya dan menanyakan bagian yang kurang. Hasilnya adalah laporan terstruktur yang mudah ditinjau.
 
 Sistem ini sengaja dirancang sebagai pelengkap layanan 119. Prinsip utamanya adalah mempermudah komunikasi, menjaga keakuratan informasi, dan tidak menghambat pelapor mendapatkan pertolongan darurat.

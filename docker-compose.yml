@@ -1,20 +1,20 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: sigap_mysql
+    container_name: sirine_mysql
     restart: unless-stopped
     ports:
       - "${DB_PORT:-3307}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-sigap}
       MYSQL_ROOT_HOST: "%"
-      MYSQL_DATABASE: ${DB_DATABASE:-sigap}
-      MYSQL_USER: ${DB_USERNAME:-sigap}
+      MYSQL_DATABASE: ${DB_DATABASE:-sirine}
+      MYSQL_USER: ${DB_USERNAME:-sirine}
       MYSQL_PASSWORD: ${DB_PASSWORD:-sigap}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - sigap_network
+      - sirine_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-sigap}"]
       interval: 5s
@@ -24,17 +24,17 @@ services:
   # Opsional: phpMyAdmin Web GUI untuk MySQL (akses di http://localhost:8080)
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: sigap_phpmyadmin
+    container_name: sirine_phpmyadmin
     restart: unless-stopped
     ports:
       - "${PMA_PORT:-8080}:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: ${DB_USERNAME:-sigap}
+      PMA_USER: ${DB_USERNAME:-sirine}
       PMA_PASSWORD: ${DB_PASSWORD:-sigap}
     networks:
-      - sigap_network
+      - sirine_network
     depends_on:
       mysql:
         condition: service_healthy
@@ -44,5 +44,5 @@ volumes:
     driver: local
 
 networks:
-  sigap_network:
+  sirine_network:
     driver: bridge

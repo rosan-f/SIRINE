@@ -1,4 +1,4 @@
-# SuaraTanggap: ERD dan Rancangan Database
+# SIRINE: ERD dan Rancangan Database
 
 Dasar rancangan: dokumen RPL bagian 9, dengan **tiga perbaikan** (dijelaskan di bagian 3).
 

@@ -159,7 +159,7 @@ class ReportController extends Controller
                 $newReportStatus = 'menuju_lokasi';
                 $note = 'Laporan diverifikasi. Petugas dan armada bantuan dikirim menuju lokasi kejadian.';
                 $telegramTitle = 'Status: Terverifikasi - Petugas Menuju Lokasi';
-                $telegramBody = "Halo {$reporterName}, laporan kejadian darurat Anda telah diverifikasi oleh tim piket SIGAP.\n\nPetugas dan armada bantuan saat ini sedang dalam perjalanan menuju lokasi kejadian. Mohon tetap berada di posisi aman dan pastikan akses jalan menuju lokasi terbuka.";
+                $telegramBody = "Halo {$reporterName}, laporan kejadian darurat Anda telah diverifikasi oleh tim piket SIRINE.\n\nPetugas dan armada bantuan saat ini sedang dalam perjalanan menuju lokasi kejadian. Mohon tetap berada di posisi aman dan pastikan akses jalan menuju lokasi terbuka.";
                 break;
 
             case 'complete':
@@ -167,7 +167,7 @@ class ReportController extends Controller
                 $newReportStatus = 'selesai';
                 $note = 'Penanganan kejadian darurat telah selesai dilaksanakan oleh tim di lapangan.';
                 $telegramTitle = 'Status: Selesai Ditangani';
-                $telegramBody = "Halo {$reporterName}, penanganan laporan kejadian darurat di lokasi telah selesai dilaksanakan oleh tim lapangan SIGAP.\n\nTerima kasih atas kepedulian dan kerja sama Anda.";
+                $telegramBody = "Halo {$reporterName}, penanganan laporan kejadian darurat di lokasi telah selesai dilaksanakan oleh tim lapangan SIRINE.\n\nTerima kasih atas kepedulian dan kerja sama Anda.";
                 break;
 
             case 'invalid':
@@ -208,7 +208,7 @@ class ReportController extends Controller
         ]);
 
         if ($chatId) {
-            $fullTelegramMessage = "Pemberitahuan Penanganan Laporan SIGAP\n\n"
+            $fullTelegramMessage = "Pemberitahuan Penanganan Laporan SIRINE\n\n"
                 ."Nomor Laporan: #{$report->report_code}\n"
                 ."{$telegramTitle}\n\n"
                 .$telegramBody;

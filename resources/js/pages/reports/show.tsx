@@ -409,7 +409,7 @@ export default function ReportShow({ report }: ReportShowProps) {
                                             >
                                                 <div className="flex items-center justify-between gap-4 mb-1 text-xs">
                                                     <span className="font-semibold text-foreground">
-                                                        {msg.direction === 'inbound' ? report.reporter.name : 'Bot SIGAP'}
+                                                        {msg.direction === 'inbound' ? report.reporter.name : 'Bot SIRINE'}
                                                     </span>
                                                     <span className="text-muted-foreground">{msg.time}</span>
                                                 </div>

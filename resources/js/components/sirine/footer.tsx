@@ -47,14 +47,14 @@ export function Footer() {
 
             <div aria-hidden="true" className="pointer-events-none relative -mb-[4.5vw] select-none">
                 <p className="font-display text-center text-[26vw] leading-none font-bold tracking-[-0.05em] text-sg-mint/[0.045] lg:text-[19rem]">
-                    SIGAP
+                    SIRINE
                 </p>
             </div>
 
             <div className="relative border-t border-white/10 bg-sg-950">
                 <div className="mx-auto flex max-w-7xl flex-col justify-between gap-2 px-5 py-5 text-xs text-sg-soft/80 sm:flex-row lg:px-8">
-                    <p>© {new Date().getFullYear()} SIGAP. All rights reserved.</p>
-                    <p>SIGAP bukan pengganti layanan darurat resmi.</p>
+                    <p>© {new Date().getFullYear()} SIRINE. All rights reserved.</p>
+                    <p>SIRINE bukan pengganti layanan darurat resmi.</p>
                 </div>
             </div>
         </footer>

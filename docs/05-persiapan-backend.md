@@ -1,4 +1,4 @@
-# SuaraTanggap: Persiapan Backend (API, WhatsApp, Speech-to-Text, AI)
+# SIRINE: Persiapan Backend (API, WhatsApp, Speech-to-Text, AI)
 
 ## 1. Akun dan akses yang harus disiapkan (Dev A)
 

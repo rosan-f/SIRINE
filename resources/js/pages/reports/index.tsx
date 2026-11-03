@@ -151,7 +151,7 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                         Laporan Kejadian
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Kelola dan pantau seluruh laporan kejadian masuk dari warga melalui Telegram SIGAP.
+                        Kelola dan pantau seluruh laporan kejadian masuk dari warga melalui Telegram SIRINE.
                     </p>
                 </div>
 
@@ -391,7 +391,7 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                                             </p>
                                             <p className="mt-1 text-xs text-muted-foreground">
                                                 {reports.length === 0
-                                                    ? 'Laporan yang dikirimkan warga via bot Telegram @RosanSigapBot akan otomatis muncul di sini.'
+                                                    ? 'Laporan yang dikirimkan warga melalui bot Telegram SIRINE akan otomatis muncul di sini.'
                                                     : 'Tidak ada laporan yang sesuai dengan filter pencarian.'}
                                             </p>
                                         </td>

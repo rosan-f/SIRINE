@@ -1,13 +1,13 @@
 import { Head } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { About } from '@/components/sigap/about';
-import { ChatPreview } from '@/components/sigap/chat-preview';
-import { Emergency } from '@/components/sigap/emergency';
-import { Features } from '@/components/sigap/features';
-import { Footer } from '@/components/sigap/footer';
-import { Hero } from '@/components/sigap/hero';
-import { HowItWorks } from '@/components/sigap/how-it-works';
-import { Navbar } from '@/components/sigap/navbar';
+import { About } from '@/components/sirine/about';
+import { ChatPreview } from '@/components/sirine/chat-preview';
+import { Emergency } from '@/components/sirine/emergency';
+import { Features } from '@/components/sirine/features';
+import { Footer } from '@/components/sirine/footer';
+import { Hero } from '@/components/sirine/hero';
+import { HowItWorks } from '@/components/sirine/how-it-works';
+import { Navbar } from '@/components/sirine/navbar';
 
 export default function Welcome() {
     // Scroll halus untuk tautan anchor, hanya selama halaman ini aktif
@@ -23,10 +23,10 @@ export default function Welcome() {
 
     return (
         <>
-            <Head title="SIGAP | Pelaporan Kejadian">
+            <Head title="SIRINE | Pelaporan Insiden Darurat">
                 <meta
                     name="description"
-                    content="SIGAP (Smart Incident Reporting) membantu masyarakat melaporkan kejadian lewat percakapan dengan asisten AI, tanpa registrasi akun."
+                    content="SIRINE (Sistem Informasi Respons Insiden dan Notifikasi Emergency) membantu masyarakat menyampaikan insiden darurat agar dapat ditangani dengan cepat dan terarah."
                 />
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

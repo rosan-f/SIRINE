@@ -8,7 +8,7 @@ const steps = [
     {
         icon: MessageSquareText,
         title: 'Mulai pelaporan',
-        text: 'Buka asisten SIGAP dan ceritakan kejadian yang ingin dilaporkan.',
+        text: 'Buka asisten SIRINE dan ceritakan kejadian yang ingin dilaporkan.',
     },
     {
         icon: Bot,
@@ -92,7 +92,7 @@ export function HowItWorks() {
                                 Mulai dari satu kalimat.
                             </p>
                             <p className="mt-2 text-sm text-sg-text">
-                                Asisten SIGAP yang akan menanyakan sisanya.
+                                Asisten SIRINE yang akan menanyakan sisanya.
                             </p>
                         </div>
                         <LaporButton size="lg" />

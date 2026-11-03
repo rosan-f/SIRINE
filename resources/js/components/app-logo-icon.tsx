@@ -12,8 +12,9 @@ export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
             aria-hidden="true"
             {...props}
         >
-            <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z" />
-            <path d="M7.5 11.5h2.1l1.6-2.9 2.6 5.8 1.5-2.9h2.2" />
+            <path d="M6 21h12m-10-2h8l-1.2-3h-5.6L8 19Zm1.5-5a4.5 4.5 0 0 1 9 0v1h-9v-1Z" />
+            <path d="M12 3v2M5 6l1.5 1.5M19 6l-1.5 1.5" />
+            <circle cx="12" cy="13.5" r="1.5" />
         </svg>
     );
 }

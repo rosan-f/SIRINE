@@ -63,7 +63,7 @@ class IncidentReportService
                     ->where('conversation_status', 'active')
                     ->update(['conversation_status' => 'completed']);
 
-                $welcome = "Selamat datang di Layanan Pelaporan Darurat SIGAP.\n\n"
+                $welcome = "Selamat datang di Layanan Pelaporan Darurat SIRINE.\n\n"
                     ."Silakan ikuti 2 langkah berikut untuk mengirimkan laporan:\n\n"
                     ."Langkah 1:\n"
                     ."Kirimkan lokasi kejadian Anda saat ini melalui fitur Kirim Lokasi (Share Location) di Telegram.\n\n"
@@ -195,7 +195,7 @@ class IncidentReportService
                 $templateMsg = "Lokasi kejadian berhasil diterima.\n"
                     ."Koordinat: {$latitude}, {$longitude}\n\n"
                     ."Langkah 2: Silakan salin dan lengkapi format laporan di bawah ini, lalu kirim kembali:\n\n"
-                    ."[FORMAT LAPORAN SIGAP]\n"
+                    ."[FORMAT LAPORAN SIRINE]\n"
                     ."Jenis Kejadian: \n"
                     ."Patokan/Alamat: \n"
                     ."Keterangan: \n"
@@ -279,7 +279,7 @@ class IncidentReportService
     ): Report {
         $analysis = $this->geminiService->extractReport($textData);
 
-        $reportCode = 'SIGAP-'.date('Ymd').'-'.strtoupper(Str::random(4));
+        $reportCode = 'SIRINE-'.date('Ymd').'-'.strtoupper(Str::random(4));
 
         $report = Report::create([
             'report_code' => $reportCode,

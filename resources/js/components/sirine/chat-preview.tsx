@@ -10,7 +10,7 @@ const script: ChatMessage[] = [
     {
         id: 'p1',
         from: 'bot',
-        text: 'Halo! Selamat datang di SIGAP. Ada kejadian apa yang ingin kamu laporkan?',
+        text: 'Halo! Selamat datang di SIRINE. Ada kejadian apa yang ingin kamu laporkan?',
     },
     {
         id: 'p2',

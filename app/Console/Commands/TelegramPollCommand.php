@@ -18,7 +18,7 @@ class TelegramPollCommand extends Command
         $pidFile = storage_path('app/poller.pid');
         @file_put_contents($pidFile, (string) getmypid());
 
-        $this->logMessage('[INFO] Memulai Telegram Bot Polling (SIGAP)...');
+        $this->logMessage('[INFO] Memulai Telegram Bot Polling (SIRINE)...');
         $this->comment('Menghapus webhook aktif (jika ada) untuk mengaktifkan mode getUpdates...');
         $telegramService->deleteWebhook();
 
@@ -82,7 +82,7 @@ class TelegramPollCommand extends Command
             }
         } finally {
             @unlink($pidFile);
-            $this->logMessage('[STOP] Bot Polling SIGAP berhenti.');
+            $this->logMessage('[STOP] Bot Polling SIRINE berhenti.');
         }
 
         return Command::SUCCESS;

@@ -1,4 +1,4 @@
-# SuaraTanggap: Progress Tracker
+# SIRINE: Progress Tracker
 
 Legenda: `[ ]` belum, `[~]` sedang dikerjakan, `[x]` selesai
 Pemilik: **A** = Chatbot & AI, **B** = Data & Dashboard, **A+B** = bersama
