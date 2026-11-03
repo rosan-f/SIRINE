@@ -37,8 +37,19 @@ class TelegramPollCommand extends Command
                     continue;
                 }
 
-                $sender = $msg['from']['first_name'] ?? 'User';
-                $text = $msg['text'] ?? ($msg['voice'] ? '[Voice Note]' : '[Media]');
+                $sender = $msg['from']['first_name'] ?? ($msg['from']['username'] ?? 'User');
+
+                if (isset($msg['text'])) {
+                    $text = $msg['text'];
+                } elseif (isset($msg['voice']) || isset($msg['audio'])) {
+                    $text = '[Voice Note]';
+                } elseif (isset($msg['location'])) {
+                    $lat = $msg['location']['latitude'] ?? '-';
+                    $lng = $msg['location']['longitude'] ?? '-';
+                    $text = "[Share Location: {$lat}, {$lng}]";
+                } else {
+                    $text = '[Media/Lainnya]';
+                }
 
                 $this->line("<fg=yellow>[PESAN MASUK]</> Dari: <options=bold>{$sender}</> | Konten: {$text}");
 
