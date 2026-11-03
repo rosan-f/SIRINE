@@ -10,7 +10,6 @@ import { HowItWorks } from '@/components/sirine/how-it-works';
 import { Navbar } from '@/components/sirine/navbar';
 
 export default function Welcome() {
-    // Scroll halus untuk tautan anchor, hanya selama halaman ini aktif
     useEffect(() => {
         const root = document.documentElement;
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
