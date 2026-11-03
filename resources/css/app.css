@@ -146,3 +146,153 @@
         background-color: color-mix(in oklab, var(--primary) 18%, transparent);
     }
 }
+
+/*
+ * SIGAP landing page — token & animasi.
+ * Tempel isi file ini ke bagian bawah resources/css/app.css
+ * (blok @theme boleh digabung dengan @theme yang sudah ada).
+ */
+
+@theme {
+    --font-display:
+        'Bricolage Grotesque', 'Instrument Sans', ui-sans-serif, system-ui,
+        sans-serif;
+    --font-data:
+        'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* Hijau tua → mint */
+    --color-sg-950: #061d17;
+    --color-sg-900: #0a2b23;
+    --color-sg-800: #0f3a2f;
+    --color-sg-700: #15503f;
+    --color-sg-600: #1c6a53;
+    --color-sg-500: #2b8a6b;
+    --color-sg-mint: #a7e9c7;
+    --color-sg-mint-300: #c6f1da;
+    --color-sg-mint-100: #e3f7ec;
+    --color-sg-mint-50: #f0faf4;
+    --color-sg-paper: #f6faf7;
+    --color-sg-line: #dce8e0;
+    --color-sg-text: #4a6158;
+    --color-sg-soft: #a9c8ba;
+}
+
+@layer utilities {
+    /* Pola titik halus untuk latar gelap */
+    .sg-dots {
+        background-image: radial-gradient(
+            rgba(167, 233, 199, 0.16) 1px,
+            transparent 1px
+        );
+        background-size: 22px 22px;
+    }
+
+    /* Grain tipis agar permukaan gelap tidak terasa datar */
+    .sg-grain::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.07;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+}
+
+/* Reveal saat masuk viewport */
+.sg-reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+        opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--sg-delay, 0ms);
+}
+.sg-reveal.is-in {
+    opacity: 1;
+    transform: none;
+}
+
+/* Gelembung chat muncul */
+@keyframes sg-pop {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+.sg-pop {
+    animation: sg-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Indikator mengetik */
+@keyframes sg-bounce {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-3px);
+        opacity: 1;
+    }
+}
+.sg-dot {
+    animation: sg-bounce 1.1s infinite;
+}
+.sg-dot:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.sg-dot:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+/* Cincin sinyal — motif identitas SIGAP */
+@keyframes sg-ring {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+.sg-ring {
+    animation: sg-ring 4.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+@keyframes sg-ping {
+    75%,
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+}
+.sg-ping {
+    animation: sg-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sg-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+    .sg-pop,
+    .sg-dot,
+    .sg-ring,
+    .sg-ping {
+        animation: none;
+    }
+}
+@media (scripting: none) {
+    .sg-reveal {
+        opacity: 1;
+        transform: none;
+    }
+}
