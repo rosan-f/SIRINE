@@ -1,15 +1,23 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
-    Bot,
+    Activity,
     CheckCircle2,
     ClipboardList,
     Clock3,
+    ExternalLink,
     Inbox,
     MapPin,
-    MessageSquareText,
+    Play,
+    RefreshCw,
     ShieldCheck,
+    Square,
+    Terminal,
+    Truck,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -19,187 +27,224 @@ import {
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { index as reportsIndex } from '@/routes/reports';
 
 type ReportStatus =
-    | 'Baru diterima'
-    | 'Menunggu informasi'
-    | 'Siap ditinjau'
-    | 'Dalam pemeriksaan'
-    | 'Terverifikasi';
+    | 'baru_diterima'
+    | 'menunggu_informasi'
+    | 'siap_ditinjau'
+    | 'dalam_pemeriksaan'
+    | 'menuju_lokasi'
+    | 'dalam_penanganan'
+    | 'selesai'
+    | string;
 
-const stats = [
-    {
-        label: 'Total laporan',
-        value: '128',
-        hint: '+18 laporan minggu ini',
-        icon: ClipboardList,
-        tone: 'bg-accent text-primary',
-    },
-    {
-        label: 'Baru diterima',
-        value: '12',
-        hint: 'Menunggu pemeriksaan awal',
-        icon: Inbox,
-        tone: 'bg-muted text-muted-foreground',
-    },
-    {
-        label: 'Menunggu informasi',
-        value: '23',
-        hint: '6 perlu pertanyaan lanjutan',
-        icon: Clock3,
-        tone: 'bg-muted text-muted-foreground',
-    },
-    {
-        label: 'Siap ditinjau',
-        value: '8',
-        hint: 'Informasi utama sudah lengkap',
-        icon: ShieldCheck,
-        tone: 'bg-muted text-muted-foreground',
-    },
-];
-
-const reportStatusStyles: Record<ReportStatus, string> = {
-    'Baru diterima':
-        'border-border bg-accent text-accent-foreground dark:border-border',
-    'Menunggu informasi':
-        'border-border bg-muted text-muted-foreground dark:border-border',
-    'Siap ditinjau':
-        'border-border bg-muted text-foreground dark:border-border',
-    'Dalam pemeriksaan':
-        'border-border bg-muted text-muted-foreground dark:border-border',
-    Terverifikasi:
-        'border-border bg-accent text-accent-foreground dark:border-border',
-};
-
-const recentReports: {
+type RecentReport = {
+    id: number;
     code: string;
     type: string;
     location: string;
     status: ReportStatus;
+    verification: string;
     time: string;
-}[] = [
-    {
-        code: 'ST-20261103-0001',
-        type: 'Kecelakaan lalu lintas',
-        location: 'Jl. Merdeka, Bandung',
-        status: 'Baru diterima',
-        time: '5 menit lalu',
-    },
-    {
-        code: 'ST-20261103-0002',
-        type: 'Kebakaran lahan',
-        location: 'Cibiru, Bandung',
-        status: 'Menunggu informasi',
-        time: '18 menit lalu',
-    },
-    {
-        code: 'ST-20261103-0003',
-        type: 'Pohon tumbang',
-        location: 'Jl. Ahmad Yani, Bandung',
-        status: 'Siap ditinjau',
-        time: '42 menit lalu',
-    },
-    {
-        code: 'ST-20261103-0004',
-        type: 'Banjir jalanan',
-        location: 'Sukajadi, Bandung',
-        status: 'Dalam pemeriksaan',
-        time: '1 jam lalu',
-    },
-    {
-        code: 'ST-20261103-0005',
-        type: 'Kecelakaan lalu lintas',
-        location: 'Antapani, Bandung',
-        status: 'Terverifikasi',
-        time: '2 jam lalu',
-    },
-];
+};
 
-const statusSummary = [
-    {
-        label: 'Baru diterima',
-        value: 12,
-        percent: 9,
-        bar: 'bg-primary',
-    },
-    {
-        label: 'Menunggu informasi',
-        value: 23,
-        percent: 18,
-        bar: 'bg-primary/40',
-    },
-    {
-        label: 'Siap ditinjau',
-        value: 8,
-        percent: 6,
-        bar: 'bg-primary/60',
-    },
-    {
-        label: 'Dalam pemeriksaan',
-        value: 31,
-        percent: 24,
-        bar: 'bg-neutral-400',
-    },
-    {
-        label: 'Terverifikasi',
-        value: 54,
-        percent: 43,
-        bar: 'bg-primary',
-    },
-];
+type StatusSummaryItem = {
+    label: string;
+    value: number;
+    percent: number;
+    bar: string;
+};
 
-const activities = [
-    {
-        icon: Bot,
-        text: 'AI selesai memeriksa kelengkapan laporan ST-20261103-0001.',
-        time: '4 menit lalu',
-        tone: 'bg-accent text-primary',
-    },
-    {
-        icon: MessageSquareText,
-        text: 'Laporan baru masuk melalui WhatsApp dari nomor +62 812-****-4412.',
-        time: '18 menit lalu',
-        tone: 'bg-muted text-muted-foreground',
-    },
-    {
-        icon: CheckCircle2,
-        text: 'Admin menandai laporan ST-20261103-0003 siap ditinjau.',
-        time: '42 menit lalu',
-        tone: 'bg-muted text-muted-foreground',
-    },
-];
+interface DashboardProps {
+    stats: {
+        total: number;
+        baru_diterima: number;
+        sedang_ditangani: number;
+        selesai: number;
+        terverifikasi: number;
+    };
+    statusSummary: StatusSummaryItem[];
+    recentReports: RecentReport[];
+    poller: {
+        is_running: boolean;
+        pid: number | null;
+        logs: string[];
+    };
+}
 
-export default function Dashboard() {
+const statusLabels: Record<string, string> = {
+    baru_diterima: 'Baru diterima',
+    menunggu_informasi: 'Menunggu informasi',
+    siap_ditinjau: 'Siap ditinjau',
+    dalam_pemeriksaan: 'Dalam pemeriksaan',
+    menuju_lokasi: 'Petugas Menuju Lokasi',
+    dalam_penanganan: 'Dalam Penanganan',
+    selesai: 'Selesai Ditangani',
+};
+
+const statusStyles: Record<string, string> = {
+    baru_diterima: 'bg-muted text-muted-foreground border-border',
+    menunggu_informasi: 'bg-muted text-muted-foreground border-border',
+    siap_ditinjau: 'bg-accent text-accent-foreground border-border',
+    dalam_pemeriksaan: 'bg-secondary text-secondary-foreground border-border',
+    menuju_lokasi: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    dalam_penanganan: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    selesai: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+};
+
+export default function Dashboard({
+    stats,
+    statusSummary,
+    recentReports,
+    poller,
+}: DashboardProps) {
+    const [isRunning, setIsRunning] = useState(poller.is_running);
+    const [pid, setPid] = useState<number | null>(poller.pid);
+    const [logs, setLogs] = useState<string[]>(poller.logs);
+    const [isActionLoading, setIsActionLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const logContainerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll logs ke paling bawah ketika logs bertambah
+    useEffect(() => {
+        if (logContainerRef.current) {
+            logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+        }
+    }, [logs]);
+
+    // Polling live logs setiap 4 detik
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const response = await fetch('/poller/logs');
+                if (response.ok) {
+                    const data = await response.json();
+                    setIsRunning(data.is_running);
+                    setPid(data.pid);
+                    if (data.logs) {
+                        setLogs(data.logs);
+                    }
+                }
+            } catch (err) {
+                // Abaikan kesalahan koneksi berkala
+            }
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleStartPoller = () => {
+        setIsActionLoading(true);
+        router.post(
+            '/poller/start',
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setIsActionLoading(false),
+            },
+        );
+    };
+
+    const handleStopPoller = () => {
+        setIsActionLoading(true);
+        router.post(
+            '/poller/stop',
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setIsActionLoading(false),
+            },
+        );
+    };
+
+    const handleManualRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            const response = await fetch('/poller/logs');
+            if (response.ok) {
+                const data = await response.json();
+                setIsRunning(data.is_running);
+                setPid(data.pid);
+                if (data.logs) {
+                    setLogs(data.logs);
+                }
+            }
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    const topCards = [
+        {
+            label: 'Total Laporan',
+            value: stats.total,
+            hint: `${stats.terverifikasi} telah diverifikasi`,
+            icon: ClipboardList,
+            style: 'text-primary',
+        },
+        {
+            label: 'Baru Diterima',
+            value: stats.baru_diterima,
+            hint: 'Menunggu peninjauan petugas',
+            icon: Inbox,
+            style: 'text-muted-foreground',
+        },
+        {
+            label: 'Sedang Ditangani',
+            value: stats.sedang_ditangani,
+            hint: 'Petugas aktif di lapangan',
+            icon: Truck,
+            style: 'text-blue-500',
+        },
+        {
+            label: 'Selesai Ditangani',
+            value: stats.selesai,
+            hint: 'Penanganan tuntas',
+            icon: CheckCircle2,
+            style: 'text-emerald-500',
+        },
+    ];
+
     return (
         <>
             <Head title="Dashboard" />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 md:p-6">
+                {/* Header Section */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Dashboard
+                            Dashboard Pemantauan SIGAP
                         </h1>
                         <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                            Pantau laporan yang masuk melalui WhatsApp dan
-                            tinjau laporan yang membutuhkan perhatian.
+                            Pantau laporan darurat yang masuk melalui bot Telegram dan kendalikan proses integrasi secara terpusat.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">
-                        <span className="size-1.5 rounded-full bg-primary" />
-                        WhatsApp terhubung
+                    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs">
+                        <span
+                            className={cn(
+                                'size-2 rounded-full',
+                                isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-400',
+                            )}
+                        />
+                        <span className="font-medium text-foreground">
+                            Bot Telegram: {isRunning ? 'Aktif Berjalan' : 'Berhenti'}
+                        </span>
+                        {pid && <span className="text-muted-foreground">(PID: {pid})</span>}
                     </div>
                 </div>
 
+                {/* 4 Stat Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {stats.map((stat) => (
+                    {topCards.map((stat) => (
                         <Card
                             key={stat.label}
                             className="gap-4 rounded-xl border-border py-5 shadow-none"
                         >
                             <CardContent className="px-5">
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center justify-between gap-3">
                                     <div>
                                         <p className="text-sm text-muted-foreground">
                                             {stat.label}
@@ -207,174 +252,222 @@ export default function Dashboard() {
                                         <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                                             {stat.value}
                                         </p>
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {stat.hint}
+                                        </p>
                                     </div>
-                                    <div
-                                        className={cn(
-                                            'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                                            stat.tone,
-                                        )}
-                                    >
-                                        <stat.icon className="size-4.5" />
+
+                                    <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                        <stat.icon className={cn('size-5', stat.style)} />
                                     </div>
                                 </div>
-                                <p className="mt-3 text-xs text-muted-foreground">
-                                    {stat.hint}
-                                </p>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-                    <Card className="gap-0 overflow-hidden rounded-xl border-border shadow-none">
-                        <CardHeader className="flex-row items-center justify-between gap-4 border-b border-border pb-4">
-                            <div>
-                                <CardTitle className="text-base">
-                                    Laporan terbaru
-                                </CardTitle>
-                                <CardDescription>
-                                    Lima laporan terakhir dari kanal WhatsApp.
-                                </CardDescription>
-                            </div>
-                            <Badge
-                                variant="outline"
-                                className="rounded-full border-border text-[11px] font-normal text-muted-foreground"
-                            >
-                                Data contoh
-                            </Badge>
-                        </CardHeader>
+                {/* Main 2-Column: Left (Recent Reports & Summary) | Right (Live Poller Logs & Controls) */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Left Column: Recent Reports */}
+                    <div className="space-y-6">
+                        <Card className="rounded-xl border-border shadow-none">
+                            <CardHeader className="flex flex-row items-center justify-between pb-3">
+                                <div>
+                                    <CardTitle className="text-base font-semibold text-foreground">
+                                        Laporan Kejadian Terbaru
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Daftar laporan riil yang baru masuk ke sistem.
+                                    </CardDescription>
+                                </div>
 
-                        <CardContent className="px-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-160 text-left text-sm">
-                                    <thead className="text-[11px] tracking-wider text-muted-foreground uppercase">
-                                        <tr className="border-b border-border">
-                                            <th className="px-5 py-3 font-medium">
-                                                Kode
-                                            </th>
-                                            <th className="px-5 py-3 font-medium">
-                                                Kejadian
-                                            </th>
-                                            <th className="px-5 py-3 font-medium">
-                                                Status
-                                            </th>
-                                            <th className="hidden px-5 py-3 font-medium lg:table-cell">
-                                                Masuk
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                <Link href={reportsIndex()}>
+                                    <Button variant="ghost" size="sm" className="gap-1 text-xs cursor-pointer">
+                                        Lihat Semua
+                                        <ExternalLink className="size-3" />
+                                    </Button>
+                                </Link>
+                            </CardHeader>
+
+                            <CardContent>
+                                {recentReports.length > 0 ? (
+                                    <div className="divide-y divide-border">
                                         {recentReports.map((report) => (
-                                            <tr
+                                            <Link
                                                 key={report.code}
-                                                className="border-b border-border transition-colors last:border-0 hover:bg-muted/50"
+                                                href={`/laporan/${report.id}`}
+                                                className="flex items-center justify-between py-3 transition-colors hover:bg-muted/20 px-2 rounded-lg"
                                             >
-                                                <td className="px-5 py-3.5 font-medium whitespace-nowrap text-foreground">
-                                                    {report.code}
-                                                </td>
-                                                <td className="px-5 py-3.5">
-                                                    <div className="font-medium text-foreground">
-                                                        {report.type}
+                                                <div className="min-w-0 flex-1 pr-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-sm text-foreground">
+                                                            {report.type}
+                                                        </span>
+                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                            #{report.code}
+                                                        </span>
                                                     </div>
-                                                    <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                                                        <MapPin className="size-3" />
+
+                                                    <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1 line-clamp-1">
+                                                        <MapPin className="size-3 shrink-0" />
                                                         {report.location}
-                                                    </div>
-                                                </td>
-                                                <td className="px-5 py-3.5">
+                                                    </p>
+                                                </div>
+
+                                                <div className="text-right shrink-0">
                                                     <Badge
                                                         variant="outline"
                                                         className={cn(
-                                                            'rounded-full px-2.5 font-medium',
-                                                            reportStatusStyles[
-                                                                report.status
-                                                            ],
+                                                            'rounded-full text-xs font-normal',
+                                                            statusStyles[report.status] || statusStyles.baru_diterima,
                                                         )}
                                                     >
-                                                        {report.status}
+                                                        {statusLabels[report.status] || report.status}
                                                     </Badge>
-                                                </td>
-                                                <td className="hidden px-5 py-3.5 text-xs whitespace-nowrap text-muted-foreground lg:table-cell">
-                                                    {report.time}
-                                                </td>
-                                            </tr>
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {report.time}
+                                                    </p>
+                                                </div>
+                                            </Link>
                                         ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    </div>
+                                ) : (
+                                    <div className="py-8 text-center text-sm text-muted-foreground">
+                                        Belum ada laporan masuk di database.
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                    <div className="flex flex-col gap-4">
-                        <Card className="gap-4 rounded-xl border-border shadow-none">
-                            <CardHeader>
-                                <CardTitle className="text-base">
-                                    Status laporan
+                        {/* Status Summary Progress */}
+                        <Card className="rounded-xl border-border shadow-none">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold text-foreground">
+                                    Distribusi Status Penanganan
                                 </CardTitle>
                                 <CardDescription>
-                                    Distribusi seluruh laporan yang tersimpan.
+                                    Persentase status penanganan seluruh laporan masuk.
                                 </CardDescription>
                             </CardHeader>
+
                             <CardContent className="space-y-4">
                                 {statusSummary.map((item) => (
-                                    <div key={item.label}>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">
+                                    <div key={item.label} className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="font-medium text-foreground">
                                                 {item.label}
                                             </span>
-                                            <span className="font-medium text-foreground">
-                                                {item.value}
+                                            <span className="text-muted-foreground">
+                                                {item.value} laporan ({item.percent}%)
                                             </span>
                                         </div>
-                                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                                             <div
-                                                className={cn(
-                                                    'h-full rounded-full',
-                                                    item.bar,
-                                                )}
-                                                style={{
-                                                    width: `${item.percent}%`,
-                                                }}
+                                                className={cn('h-full rounded-full transition-all', item.bar)}
+                                                style={{ width: `${item.percent}%` }}
                                             />
                                         </div>
                                     </div>
                                 ))}
                             </CardContent>
                         </Card>
+                    </div>
 
-                        <Card className="gap-4 rounded-xl border-border shadow-none">
-                            <CardHeader>
-                                <CardTitle className="text-base">
-                                    Aktivitas terbaru
-                                </CardTitle>
-                                <CardDescription>
-                                    Pembaruan dari sistem dan admin.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {activities.map((activity) => (
-                                    <div
-                                        key={activity.text}
-                                        className="flex gap-3"
-                                    >
-                                        <div
-                                            className={cn(
-                                                'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg',
-                                                activity.tone,
-                                            )}
-                                        >
-                                            <activity.icon className="size-4" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm leading-snug text-foreground">
-                                                {activity.text}
-                                            </p>
-                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                {activity.time}
-                                            </p>
-                                        </div>
+                    {/* Right Column: Telegram Poller Live Logs & Controls */}
+                    <div>
+                        <Card className="rounded-xl border-border shadow-none flex flex-col h-full">
+                            <CardHeader className="pb-3 border-b border-border">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                                            <Terminal className="size-4 text-primary" />
+                                            Log Aktivitas Telegram (telegram:poll)
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Pantau proses background polling pesan masuk secara real-time.
+                                        </CardDescription>
                                     </div>
-                                ))}
+
+                                    {/* Action Buttons: Start, Stop, Refresh */}
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={handleStartPoller}
+                                            disabled={isRunning || isActionLoading}
+                                            className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-8 text-xs"
+                                        >
+                                            <Play className="size-3.5 fill-current" />
+                                            Mulai Poller
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={handleStopPoller}
+                                            disabled={!isRunning || isActionLoading}
+                                            className="inline-flex items-center gap-1.5 cursor-pointer h-8 text-xs"
+                                        >
+                                            <Square className="size-3.5 fill-current" />
+                                            Hentikan
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="outline"
+                                            onClick={handleManualRefresh}
+                                            disabled={isRefreshing}
+                                            className="h-8 w-8 cursor-pointer"
+                                            title="Segarkan Log"
+                                        >
+                                            <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="p-0 flex-1 flex flex-col">
+                                {/* Terminal Console Window */}
+                                <div
+                                    ref={logContainerRef}
+                                    className="flex-1 min-h-120 max-h-140 overflow-y-auto bg-neutral-950 p-4 font-mono text-xs text-neutral-300 leading-relaxed space-y-1 rounded-b-xl selection:bg-neutral-800"
+                                >
+                                    <div className="text-neutral-500 pb-2 border-b border-neutral-800 mb-2 flex items-center justify-between">
+                                        <span>Terminal SIGAP Daemon Poller</span>
+                                        <span>Status: {isRunning ? 'RUNNING' : 'STOPPED'}</span>
+                                    </div>
+
+                                    {logs.length > 0 ? (
+                                        logs.map((line, index) => {
+                                            const isError = line.includes('ErrorException') || line.includes('Error') || line.includes('Exception');
+                                            const isSuccess = line.includes('[SUKSES]') || line.includes('[READY]') || line.includes('berhasil');
+                                            const isMessage = line.includes('[PESAN MASUK]');
+                                            const isAction = line.includes('[ACTION]') || line.includes('[STATUS]');
+
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={cn(
+                                                        'font-mono break-all',
+                                                        isError && 'text-red-400',
+                                                        isSuccess && 'text-emerald-400',
+                                                        isMessage && 'text-yellow-400',
+                                                        isAction && 'text-blue-400',
+                                                        !isError && !isSuccess && !isMessage && !isAction && 'text-neutral-300',
+                                                    )}
+                                                >
+                                                    {line}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-neutral-500 italic">
+                                            Belum ada log tercatat. Tekan Mulai Poller untuk menjalankan bot.
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
