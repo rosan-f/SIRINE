@@ -38,7 +38,7 @@ export function Footer() {
                 <div className="md:col-span-3">
                     <h2 className="font-data text-[11px] tracking-[0.2em] text-sg-mint uppercase">Layanan</h2>
                     <ul className="mt-5 space-y-3 text-sm text-sg-soft">
-                        <li><Link href="/lapor" className="transition-colors hover:text-white">Mulai Lapor</Link></li>
+                        <li><a href="https://t.me/RosanSigapBot" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">Mulai Lapor</a></li>
                         <li><Link href="/login" className="transition-colors hover:text-white">Masuk Admin</Link></li>
                         <li><a href="tel:112" className="transition-colors hover:text-white">Darurat: 112</a></li>
                     </ul>

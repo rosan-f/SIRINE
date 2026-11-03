@@ -1,8 +1,7 @@
-import { Link } from '@inertiajs/react';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** Satu-satunya CTA utama SIRINE: selalu mengarah ke /lapor (Web Chatbot). */
+/** CTA pelaporan SIRINE yang mengarahkan warga ke bot Telegram. */
 export function LaporButton({
     tone = 'dark',
     size = 'md',
@@ -16,8 +15,10 @@ export function LaporButton({
     className?: string;
 }) {
     return (
-        <Link
-            href="/lapor"
+        <a
+            href="https://t.me/RosanSigapBot"
+            target="_blank"
+            rel="noopener noreferrer"
             className={cn(
                 'group inline-flex items-center gap-3 rounded-full font-semibold whitespace-nowrap transition duration-300 outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
                 size === 'lg' ? 'py-2 pr-2 pl-7 text-[15px]' : 'py-1.5 pr-1.5 pl-5 text-sm',
@@ -37,6 +38,6 @@ export function LaporButton({
             >
                 <ArrowUpRight className={size === 'lg' ? 'size-5' : 'size-4'} />
             </span>
-        </Link>
+        </a>
     );
 }
