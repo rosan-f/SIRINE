@@ -11,7 +11,7 @@ use Inertia\Response;
 class DashboardController extends Controller
 {
     /**
-     * Tampilkan halaman dashboard pemantauan dengan data aktual dari database.
+     * Render system monitoring dashboard with aggregated metrics.
      */
     public function index(): Response
     {
@@ -21,7 +21,6 @@ class DashboardController extends Controller
         $selesai = Report::where('report_status', 'selesai')->count();
         $terverifikasi = Report::where('verification_status', 'terverifikasi')->count();
 
-        // Rekap status laporan
         $statuses = [
             'baru_diterima' => ['label' => 'Baru diterima', 'color' => 'bg-neutral-500'],
             'menuju_lokasi' => ['label' => 'Petugas Menuju Lokasi', 'color' => 'bg-blue-500'],
@@ -41,7 +40,6 @@ class DashboardController extends Controller
             ];
         }
 
-        // Laporan terbaru langsung dari database
         $recentReports = Report::with('reporter')
             ->latest()
             ->take(6)
@@ -58,7 +56,6 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Informasi status & log Telegram Poller
         $pollerInfo = $this->checkPollerStatus();
         $logs = $this->getRecentLogs(35);
 
@@ -81,7 +78,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Memulai background poller Telegram.
+     * Start the Telegram polling background process.
      */
     public function startPoller(): RedirectResponse
     {
@@ -95,7 +92,6 @@ class DashboardController extends Controller
         $timestamp = now()->format('Y-m-d H:i:s');
         @file_put_contents($logPath, "[{$timestamp}] [ACTION] Memulai daemon polling dari dashboard...\n", FILE_APPEND);
 
-        // Jalankan background process di Windows
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $cmd = 'start /B php artisan telegram:poll';
             pclose(popen("cd /D \"{$basePath}\" && {$cmd}", 'r'));
@@ -103,14 +99,13 @@ class DashboardController extends Controller
             exec("cd \"{$basePath}\" && php artisan telegram:poll > /dev/null 2>&1 &");
         }
 
-        // Tunggu sejenak agar PID file tertulis
         usleep(400000);
 
         return redirect()->back()->with('success', 'Bot Poller Telegram berhasil dijalankan.');
     }
 
     /**
-     * Menghentikan background poller Telegram.
+     * Terminate the Telegram polling background process.
      */
     public function stopPoller(): RedirectResponse
     {
@@ -136,7 +131,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Endpoint JSON untuk refresh log Telegram Poller secara live.
+     * Retrieve the latest log entries for live dashboard polling.
      */
     public function getLogs(): JsonResponse
     {
@@ -151,7 +146,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Memeriksa apakah proses poller sedang berjalan.
+     * Check process health using registered PID file.
+     *
+     * @return array{is_running: bool, pid: int|null}
      */
     protected function checkPollerStatus(): array
     {
@@ -184,7 +181,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Mengambil N baris terakhir dari file log poller.
+     * Read trailing lines from the daemon log stream.
+     *
+     * @return array<int, string>
      */
     protected function getRecentLogs(int $lines = 35): array
     {

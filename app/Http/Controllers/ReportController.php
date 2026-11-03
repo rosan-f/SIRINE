@@ -16,7 +16,7 @@ use Inertia\Response;
 class ReportController extends Controller
 {
     /**
-     * Show the report list page.
+     * Display a listing of emergency incident reports.
      */
     public function index(): Response
     {
@@ -60,7 +60,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Show the detailed report page.
+     * Display the specified report detail view with location coordinates and audit trail.
      */
     public function show(Report $report): Response
     {
@@ -131,7 +131,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Konfirmasi / perbarui status laporan dan kirimkan balasan otomatis ke Telegram pelapor.
+     * Update report status and dispatch automated Telegram notification to the reporter.
      */
     public function updateStatus(Request $request, Report $report, TelegramService $telegramService): RedirectResponse
     {
@@ -193,13 +193,11 @@ class ReportController extends Controller
             $telegramBody .= "\n\nCatatan Tambahan Petugas: ".$validated['custom_notes'];
         }
 
-        // 1. Simpan perubahan pada Report
         $report->update([
             'verification_status' => $newVerification,
             'report_status' => $newReportStatus,
         ]);
 
-        // 2. Rekam ke riwayat laporan (ReportHistory)
         ReportHistory::create([
             'report_id' => $report->id,
             'admin_id' => auth()->id(),
@@ -209,7 +207,6 @@ class ReportController extends Controller
             'created_at' => now(),
         ]);
 
-        // 3. Kirim notifikasi pesan resmi ke Telegram pelapor (tanpa emoticon)
         if ($chatId) {
             $fullTelegramMessage = "Pemberitahuan Penanganan Laporan SIGAP\n\n"
                 ."Nomor Laporan: #{$report->report_code}\n"
@@ -218,7 +215,6 @@ class ReportController extends Controller
 
             $telegramService->sendMessage($chatId, $fullTelegramMessage);
 
-            // Hubungkan pesan keluar ke percakapan aktif pelapor
             $conversation = Conversation::where('report_id', $report->id)->latest('id')->first()
                 ?? Conversation::where('reporter_id', $reporter?->id)->latest('id')->first();
 

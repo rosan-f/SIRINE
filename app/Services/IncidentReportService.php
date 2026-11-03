@@ -10,7 +10,6 @@ use App\Models\Reporter;
 use App\Services\AI\GeminiService;
 use App\Services\Telegram\TelegramService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -22,11 +21,7 @@ class IncidentReportService
     ) {}
 
     /**
-     * Menangani satu update pesan masuk dari Telegram (teks / voice / lokasi).
-     * Menerapkan alur 2 langkah sederhana tanpa loop tanya-jawab berulang:
-     * Langkah 1: Pelapor mengirim Share Location (GPS).
-     * Langkah 2: Pelapor mengisi template laporan (atau mengirim voice note).
-     * Data diekstrak dan disimpan langsung ke database reports dengan koordinat GPS.
+     * Process an incoming Telegram update through the 2-step emergency reporting pipeline.
      */
     public function handleIncomingTelegramUpdate(array $update): ?Report
     {
@@ -39,19 +34,14 @@ class IncidentReportService
         $messageId = (string) $message['message_id'];
         $waMessageId = "tg_{$messageId}_{$chatId}";
 
-        // Cegah duplikasi pesan (TC-08)
         if (Message::where('wa_message_id', $waMessageId)->exists()) {
-            Log::info("Pesan Telegram duplikat diabaikan: {$waMessageId}");
-
             return null;
         }
 
-        // Ekstrak nama pengirim
         $firstName = $message['from']['first_name'] ?? '';
         $lastName = $message['from']['last_name'] ?? '';
         $senderName = trim("{$firstName} {$lastName}") ?: ($message['from']['username'] ?? 'Warga');
 
-        // Deteksi tipe pesan
         $messageType = 'text';
         $inputType = 'text';
         $textToProcess = '';
@@ -63,7 +53,6 @@ class IncidentReportService
         if (isset($message['text'])) {
             $textToProcess = $message['text'];
 
-            // Jika user kirim /start, kirim panduan 2 langkah dan reset sesi percakapan
             if (str_starts_with(trim($textToProcess), '/start')) {
                 $reporter = Reporter::firstOrCreate(
                     ['whatsapp_number' => $chatId],
@@ -95,7 +84,7 @@ class IncidentReportService
             if ($telegramFile && isset($telegramFile['file_path'])) {
                 $binary = $this->telegramService->downloadFile($telegramFile['file_path']);
                 if ($binary) {
-                    $ext = pathinfo($telegramFile['file_path'], PATHINFO_EXTENSION) ?: 'ogg';
+                    $ext = pathinfo($telegramFile['file_path'], PATHINFO_EXTENSION) ?: 'oga';
                     $fileName = 'audio_'.time().'_'.Str::random(8).'.'.$ext;
                     $savedAudioPath = "private/audio/{$fileName}";
                     Storage::disk('local')->put($savedAudioPath, $binary);
@@ -131,7 +120,6 @@ class IncidentReportService
             $latitude,
             $longitude
         ) {
-            // 1. Dapatkan atau daftarkan Reporter
             $reporter = Reporter::firstOrCreate(
                 ['whatsapp_number' => $chatId],
                 ['name' => $senderName]
@@ -141,7 +129,6 @@ class IncidentReportService
                 $reporter->update(['name' => $senderName]);
             }
 
-            // 2. Cari percakapan aktif yang belum kedaluwarsa
             $expireMinutes = (int) env('CONVERSATION_EXPIRE_MINUTES', 60);
             $conversation = Conversation::where('reporter_id', $reporter->id)
                 ->where('conversation_status', 'active')
@@ -162,7 +149,6 @@ class IncidentReportService
                 ]);
             }
 
-            // 3. Rekam pesan masuk ke tabel messages
             $inboundMsg = Message::create([
                 'conversation_id' => $conversation->id,
                 'report_id' => null,
@@ -178,11 +164,9 @@ class IncidentReportService
                 'created_at' => now(),
             ]);
 
-            // 4. Periksa apakah pesan ini adalah SHARE LOCATION (Langkah 1)
             if ($messageType === 'location') {
                 $inboundMsg->update(['process_status' => 'processed']);
 
-                // Periksa apakah sebelumnya di percakapan ini sudah ada pesan teks/suara laporan yang masuk
                 $previousTextMsg = Message::where('conversation_id', $conversation->id)
                     ->whereIn('message_type', ['text', 'audio'])
                     ->where('direction', 'inbound')
@@ -190,7 +174,6 @@ class IncidentReportService
                     ->latest('id')
                     ->first();
 
-                // Jika sudah ada teks laporan sebelumnya, langsung proses dan simpan laporan
                 if ($previousTextMsg && ! empty($previousTextMsg->body)) {
                     return $this->finalizeReport(
                         $reporter,
@@ -204,7 +187,6 @@ class IncidentReportService
                     );
                 }
 
-                // Jika belum ada teks laporan, kirim template Langkah 2
                 $conversation->update([
                     'current_question' => 'awaiting_template',
                     'last_message_at' => now(),
@@ -236,8 +218,6 @@ class IncidentReportService
                 return null;
             }
 
-            // 5. Jika pesan berupa TEKS atau VOICE NOTE
-            // Cari lokasi koordinat GPS dari sesi percakapan ini
             $locationMsg = Message::where('conversation_id', $conversation->id)
                 ->where('message_type', 'location')
                 ->whereNotNull('latitude')
@@ -245,7 +225,6 @@ class IncidentReportService
                 ->latest('id')
                 ->first();
 
-            // Jika belum ada lokasi GPS yang dikirimkan pada sesi ini, minta pelapor mengirim lokasi terlebih dahulu
             if (! $locationMsg) {
                 $conversation->update([
                     'current_question' => 'awaiting_location',
@@ -272,8 +251,6 @@ class IncidentReportService
                 return null;
             }
 
-            // 6. Jika lokasi GPS sudah ada dan pelapor mengirim teks/suara template:
-            // Proses ekstraksi langsung (1-shot) dan simpan ke database
             return $this->finalizeReport(
                 $reporter,
                 $conversation,
@@ -288,7 +265,7 @@ class IncidentReportService
     }
 
     /**
-     * Menyelesaikan pembuatan laporan ke database dan mengirim konfirmasi ke pelapor.
+     * Persist the validated emergency report and notify the reporter via Telegram.
      */
     protected function finalizeReport(
         Reporter $reporter,
@@ -300,7 +277,6 @@ class IncidentReportService
         string $chatId,
         string $senderName
     ): Report {
-        // Ekstraksi data menggunakan template parser atau Gemini 1-shot
         $analysis = $this->geminiService->extractReport($textData);
 
         $reportCode = 'SIGAP-'.date('Ymd').'-'.strtoupper(Str::random(4));
@@ -326,13 +302,11 @@ class IncidentReportService
             'report_status' => 'baru_diterima',
         ]);
 
-        // Hubungkan seluruh pesan di sesi ini ke laporan yang baru dibuat
         Message::where('conversation_id', $conversation->id)->update([
             'report_id' => $report->id,
             'process_status' => 'processed',
         ]);
 
-        // Tandai sesi percakapan selesai
         $conversation->update([
             'report_id' => $report->id,
             'conversation_status' => 'completed',
@@ -340,7 +314,6 @@ class IncidentReportService
             'last_message_at' => now(),
         ]);
 
-        // Simpan detail entitas ke report_details
         $fieldsToRecord = [
             'incident_type' => $report->incident_type,
             'incident_time' => $report->incident_time,
@@ -364,7 +337,6 @@ class IncidentReportService
             }
         }
 
-        // Tautan rute Google Maps resmi
         $mapsRouteUrl = "https://www.google.com/maps/dir/?api=1&destination={$latitude},{$longitude}";
         $victimText = $report->victim_condition ?: ($report->victim_count ? "{$report->victim_count} orang" : 'Nihil / Tidak ada korban');
 

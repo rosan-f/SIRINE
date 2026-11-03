@@ -17,45 +17,49 @@ class GeminiService
     public function __construct()
     {
         $this->apiKey = (string) env('LLM_API_KEY', '');
-        $this->model = (string) env('LLM_MODEL', 'gemini-3.8-flash');
+        $this->model = (string) env('LLM_MODEL', 'gemini-3.5-flash');
         $this->baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
     }
 
     /**
-     * Memanggil API Gemini dengan mekanisme retry otomatis jika terjadi lonjakan trafik (HTTP 503).
+     * Execute Gemini API request with automatic retry and model fallback.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|null
      */
     protected function callGemini(array $payload, int $timeout = 25): ?array
     {
         if (empty($this->apiKey)) {
-            Log::warning('LLM_API_KEY belum disetel di .env');
+            Log::warning('LLM_API_KEY is not configured in .env');
 
             return null;
         }
 
-        $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
+        $models = array_unique([$this->model, 'gemini-3.5-flash', 'gemini-3.8-flash']);
 
-        // Coba hingga 2 kali jika terkena 503
-        for ($attempt = 1; $attempt <= 2; $attempt++) {
-            try {
-                $response = Http::withoutVerifying()->timeout($timeout)->post($url, $payload);
+        foreach ($models as $modelName) {
+            $url = "{$this->baseUrl}/models/{$modelName}:generateContent?key={$this->apiKey}";
 
-                if ($response->successful()) {
-                    return $response->json();
+            for ($attempt = 1; $attempt <= 2; $attempt++) {
+                try {
+                    $response = Http::withoutVerifying()->timeout($timeout)->post($url, $payload);
+
+                    if ($response->successful()) {
+                        return $response->json();
+                    }
+
+                    $status = $response->status();
+                    if ($status === 503) {
+                        usleep(500000);
+
+                        continue;
+                    }
+
+                    break;
+                } catch (\Throwable $e) {
+                    Log::warning("Gemini API exception on {$modelName}: ".$e->getMessage());
+                    usleep(500000);
                 }
-
-                $status = $response->status();
-                if ($status === 503) {
-                    Log::warning("Gemini 503 High Demand (percobaan {$attempt}/2). Menunggu 1 detik...");
-                    usleep(1000000);
-
-                    continue;
-                }
-
-                Log::warning("Gemini error {$status}: ".$response->body());
-                break;
-            } catch (\Throwable $e) {
-                Log::warning('Exception Gemini: '.$e->getMessage());
-                usleep(1000000);
             }
         }
 
@@ -63,7 +67,7 @@ class GeminiService
     }
 
     /**
-     * Transkripsikan file audio / voice note ke teks menggunakan Gemini Multimodal.
+     * Transcribe speech audio binary into verbatim Indonesian text.
      */
     public function transcribeAudio(string $audioBinary, string $mimeType = 'audio/ogg'): ?string
     {
@@ -72,7 +76,7 @@ class GeminiService
                 [
                     'parts' => [
                         [
-                            'text' => 'Tolong transkripsikan rekaman suara pelapor kejadian darurat berikut ini secara akurat ke dalam teks bahasa Indonesia verbatim. Hanya tuliskan transkripnya tanpa kata pengantar atau penjelasan tambahan.',
+                            'text' => 'Tolong transkripsikan rekaman suara berikut ini secara akurat ke dalam teks bahasa Indonesia verbatim. Hanya tuliskan transkripnya saja tanpa kata pengantar.',
                         ],
                         [
                             'inline_data' => [
@@ -84,11 +88,11 @@ class GeminiService
                 ],
             ],
             'generationConfig' => [
-                'temperature' => 0.2,
+                'temperature' => 0.1,
             ],
         ];
 
-        $result = $this->callGemini($payload, 35);
+        $result = $this->callGemini($payload, 30);
         if ($result && isset($result['candidates'][0]['content']['parts'][0]['text'])) {
             return trim((string) $result['candidates'][0]['content']['parts'][0]['text']);
         }
@@ -97,19 +101,24 @@ class GeminiService
     }
 
     /**
-     * Ekstraksi informasi dari pesan pelapor (mendukung template terstruktur atau teks bebas/voice note).
-     * Jika format template terdeteksi, parsing langsung (cepat & 0 token).
-     * Jika teks bebas, gunakan Gemini dalam 1 kali panggil (single-shot).
+     * Extract structured report data from text or transcribed audio.
+     *
+     * @return array{
+     *     incident_type: string,
+     *     location_description: string,
+     *     description: string,
+     *     victim_count: int|null,
+     *     victim_condition: string,
+     *     summary: string
+     * }
      */
     public function extractReport(string $text): array
     {
-        // 1. Cek apakah pesan dikirim menggunakan format template
         $parsed = $this->parseTemplateFormat($text);
         if ($parsed !== null) {
             return $parsed;
         }
 
-        // 2. Jika bukan template kaku, gunakan AI Gemini (1-shot)
         $now = now()->timezone('Asia/Jakarta')->format('Y-m-d H:i:s');
         $prompt = <<<EOT
 Anda adalah sistem ekstraksi laporan kedaruratan SIGAP.
@@ -160,12 +169,13 @@ EOT;
             }
         }
 
-        // 3. Fallback cerdas berbasis heuristik teks jika AI sedang lambat atau 503
         return $this->heuristicExtraction($text);
     }
 
     /**
-     * Parsing otomatis jika pelapor mengisi template teks yang diberikan bot.
+     * Parse structured reporting template using regular expressions.
+     *
+     * @return array<string, mixed>|null
      */
     public function parseTemplateFormat(string $text): ?array
     {
@@ -191,13 +201,13 @@ EOT;
             $victim = trim($m[1]);
         }
 
-        $isPlaceholder = function (?string $val) {
+        $isPlaceholder = function (?string $val): bool {
             if ($val === null) {
                 return true;
             }
             $clean = strtolower(trim($val));
 
-            return $clean === '' || $clean === '-' || $clean === 'none' || $clean === 'nihil' || $clean === 'tidak ada';
+            return in_array($clean, ['', '-', 'none', 'nihil', 'tidak ada'], true);
         };
 
         if ($incidentType || $location || $description || $victim) {
@@ -220,7 +230,16 @@ EOT;
     }
 
     /**
-     * Fallback cepat jika AI offline / 503.
+     * Fallback heuristic parser for offline or rate-limited scenarios.
+     *
+     * @return array{
+     *     incident_type: string,
+     *     location_description: string,
+     *     description: string,
+     *     victim_count: int|null,
+     *     victim_condition: string,
+     *     summary: string
+     * }
      */
     protected function heuristicExtraction(string $text): array
     {
