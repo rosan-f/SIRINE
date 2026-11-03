@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutDashboard, Settings } from 'lucide-react';
+import { FileText, LayoutDashboard, Settings } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -22,6 +22,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutDashboard,
+    },
+    {
+        title: 'Laporan',
+        href: '/reports',
+        icon: FileText,
     },
 ];
 
