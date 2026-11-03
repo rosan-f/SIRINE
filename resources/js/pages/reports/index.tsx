@@ -1,8 +1,7 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ClipboardList,
     Clock3,
-    ExternalLink,
     Eye,
     Inbox,
     MapPin,
@@ -10,7 +9,6 @@ import {
     RotateCcw,
     Search,
     ShieldCheck,
-    User,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -20,14 +18,6 @@ import {
     Card,
     CardContent,
 } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { index as reports } from '@/routes/reports';
 
@@ -100,7 +90,6 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('semua');
     const [typeFilter, setTypeFilter] = useState('semua');
-    const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
     const filteredReports = useMemo(() => {
         return reports.filter((report) => {
@@ -304,11 +293,16 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                                     filteredReports.map((report) => (
                                         <tr
                                             key={report.code}
-                                            onClick={() => setSelectedReport(report)}
+                                            onClick={() => router.visit(`/laporan/${report.id}`)}
                                             className="border-t border-border transition-colors hover:bg-muted/30 cursor-pointer"
                                         >
                                             <td className="px-5 py-4 font-medium whitespace-nowrap text-foreground">
-                                                {report.code}
+                                                <Link
+                                                    href={`/laporan/${report.id}`}
+                                                    className="hover:underline text-foreground"
+                                                >
+                                                    {report.code}
+                                                </Link>
                                             </td>
 
                                             <td className="px-5 py-4">
@@ -369,18 +363,19 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                                             </td>
 
                                             <td className="px-5 py-4 text-right">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedReport(report);
-                                                    }}
-                                                    className="inline-flex items-center gap-1.5"
+                                                <Link
+                                                    href={`/laporan/${report.id}`}
+                                                    onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <Eye className="size-3.5" />
-                                                    Detail
-                                                </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="inline-flex items-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <Eye className="size-3.5" />
+                                                        Buka Detail
+                                                    </Button>
+                                                </Link>
                                             </td>
                                         </tr>
                                     ))
@@ -414,144 +409,6 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                     </div>
                 </Card>
             </div>
-
-            {/* Detail Report Dialog with Google Maps & Route */}
-            <Dialog open={!!selectedReport} onOpenChange={(open) => !open && setSelectedReport(null)}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    {selectedReport && (
-                        <>
-                            <DialogHeader>
-                                <div className="flex items-center justify-between gap-2 pr-6">
-                                    <DialogTitle className="text-xl font-semibold">
-                                        Detail Laporan #{selectedReport.code}
-                                    </DialogTitle>
-                                    <Badge
-                                        variant="outline"
-                                        className={cn(
-                                            'rounded-full font-normal',
-                                            statusStyles[selectedReport.status] || statusStyles.baru_diterima,
-                                        )}
-                                    >
-                                        {statusLabels[selectedReport.status] || selectedReport.status}
-                                    </Badge>
-                                </div>
-                                <DialogDescription>
-                                    Diterima pada {selectedReport.date} melalui {selectedReport.input_type === 'voice' ? 'Rekaman Suara (Voice Note)' : 'Pesan Teks'} Telegram
-                                </DialogDescription>
-                            </DialogHeader>
-
-                            <div className="space-y-4 py-2">
-                                {/* Info Utama */}
-                                <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/40 p-3 text-sm">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Jenis Kejadian</p>
-                                        <p className="font-medium text-foreground mt-0.5">{selectedReport.type}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Pelapor</p>
-                                        <p className="font-medium text-foreground mt-0.5 flex items-center gap-1">
-                                            <User className="size-3.5 text-muted-foreground" />
-                                            {selectedReport.reporter}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Status Verifikasi</p>
-                                        <p className="font-medium text-foreground mt-0.5">
-                                            {verificationLabels[selectedReport.verification] || selectedReport.verification}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Kondisi Korban</p>
-                                        <p className="font-medium text-foreground mt-0.5">
-                                            {selectedReport.victim_condition || 'Nihil / Tidak ada korban'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Ringkasan & Keterangan */}
-                                <div className="space-y-2">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Keterangan Kejadian
-                                    </p>
-                                    <div className="rounded-lg border border-border p-3 text-sm text-foreground bg-background">
-                                        {selectedReport.description || selectedReport.summary || 'Tidak ada deskripsi.'}
-                                    </div>
-                                </div>
-
-                                {/* Lokasi & Google Maps */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                            Lokasi & Rute Navigasi
-                                        </p>
-                                        {selectedReport.latitude && selectedReport.longitude && (
-                                            <span className="text-xs text-muted-foreground">
-                                                GPS: {selectedReport.latitude}, {selectedReport.longitude}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="rounded-lg border border-border p-3 text-sm bg-background flex items-start gap-2">
-                                        <MapPin className="size-4 shrink-0 text-muted-foreground mt-0.5" />
-                                        <div>
-                                            <p className="font-medium text-foreground">{selectedReport.location}</p>
-                                            {selectedReport.latitude && selectedReport.longitude ? (
-                                                <p className="text-xs text-muted-foreground mt-0.5">
-                                                    Koordinat: Latitude {selectedReport.latitude}, Longitude {selectedReport.longitude}
-                                                </p>
-                                            ) : (
-                                                <p className="text-xs text-muted-foreground mt-0.5">
-                                                    Titik koordinat GPS tidak tersedia.
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Google Map Embed & Route Button */}
-                                    {selectedReport.latitude && selectedReport.longitude ? (
-                                        <div className="space-y-3 pt-1">
-                                            <div className="overflow-hidden rounded-lg border border-border">
-                                                <iframe
-                                                    title={`Peta Lokasi ${selectedReport.code}`}
-                                                    width="100%"
-                                                    height="240"
-                                                    style={{ border: 0 }}
-                                                    loading="lazy"
-                                                    src={`https://maps.google.com/maps?q=${selectedReport.latitude},${selectedReport.longitude}&hl=id&z=15&output=embed`}
-                                                />
-                                            </div>
-
-                                            <a
-                                                href={selectedReport.google_maps_url || `https://www.google.com/maps/dir/?api=1&destination=${selectedReport.latitude},${selectedReport.longitude}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                                            >
-                                                <Navigation className="size-4" />
-                                                Tunjukkan Rute di Google Maps
-                                                <ExternalLink className="size-3.5 ml-0.5" />
-                                            </a>
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-                                            Peta Google Maps dan rute navigasi hanya aktif jika pelapor mengirimkan Share Location GPS.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <DialogFooter>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSelectedReport(null)}
-                                >
-                                    Tutup
-                                </Button>
-                            </DialogFooter>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
         </>
     );
 }

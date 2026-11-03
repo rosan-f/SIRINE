@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Report;
+use App\Models\Reporter;
 use App\Models\User;
 use App\Services\AI\GeminiService;
 use App\Services\IncidentReportService;
@@ -102,4 +103,34 @@ test('authenticated user can view report index with real database reports and ro
 
     $response->assertOk()
         ->assertInertia(fn ($page) => $page->component('reports/index')->has('reports'));
+});
+
+test('authenticated user can view report show detail page with maps and route info', function () {
+    $user = User::factory()->create();
+    $reporter = Reporter::create([
+        'name' => 'Ahmad',
+        'whatsapp_number' => '123456789',
+    ]);
+
+    $report = Report::create([
+        'report_code' => 'SIGAP-TEST-001',
+        'reporter_id' => $reporter->id,
+        'incident_type' => 'Kebakaran',
+        'location_description' => 'Jl. Merdeka No. 1',
+        'latitude' => -5.1802,
+        'longitude' => 97.1408,
+        'location_source' => 'gps',
+        'description' => 'Kebakaran ruko dua lantai',
+        'report_status' => 'baru_diterima',
+    ]);
+
+    $response = $this->actingAs($user)->get(route('reports.show', $report));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->component('reports/show')
+            ->has('report')
+            ->where('report.code', 'SIGAP-TEST-001')
+            ->where('report.latitude', -5.1802)
+            ->where('report.longitude', 97.1408)
+        );
 });

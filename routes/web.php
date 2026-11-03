@@ -11,6 +11,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
     Route::get('laporan', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('laporan/{report}', [ReportController::class, 'show'])->name('reports.show');
     Route::get('peta', [ReportMapController::class, 'index'])->name('reports.map');
     Route::get('riwayat', [ActivityLogController::class, 'index'])->name('activity.index');
 });
