@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Report;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -12,6 +13,12 @@ class ReportController extends Controller
      */
     public function index(): Response
     {
-        return Inertia::render('reports/index');
+        $reports = Report::with(['reporter'])
+            ->latest()
+            ->paginate(15);
+
+        return Inertia::render('reports/index', [
+            'reports' => $reports,
+        ]);
     }
 }
