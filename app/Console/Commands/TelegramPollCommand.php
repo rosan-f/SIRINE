@@ -14,11 +14,11 @@ class TelegramPollCommand extends Command
 
     public function handle(TelegramService $telegramService, IncidentReportService $incidentReportService): int
     {
-        $this->info('🤖 Memulai Telegram Bot Polling (SIGAP)...');
+        $this->info('[INFO] Memulai Telegram Bot Polling (SIGAP)...');
         $this->comment('Menghapus webhook aktif (jika ada) untuk mengaktifkan mode getUpdates...');
         $telegramService->deleteWebhook();
 
-        $this->info('✅ Bot siap mendengarkan pesan dari Telegram!');
+        $this->info('[READY] Bot siap mendengarkan pesan dari Telegram.');
         $this->line('Kirim pesan teks atau voice note ke bot Telegram Anda sekarang (Tekan CTRL+C untuk berhenti).');
         $this->newLine();
 
@@ -40,20 +40,20 @@ class TelegramPollCommand extends Command
                 $sender = $msg['from']['first_name'] ?? 'User';
                 $text = $msg['text'] ?? ($msg['voice'] ? '[Voice Note]' : '[Media]');
 
-                $this->line("<fg=yellow>[Pesan Masuk]</> Dari: <options=bold>{$sender}</> | Konten: {$text}");
-                $this->comment('Sedang diproses oleh Gemini AI...');
+                $this->line("<fg=yellow>[PESAN MASUK]</> Dari: <options=bold>{$sender}</> | Konten: {$text}");
 
                 $startTime = microtime(true);
                 $report = $incidentReportService->handleIncomingTelegramUpdate($update);
                 $duration = round(microtime(true) - $startTime, 2);
 
                 if ($report) {
-                    $this->info("✨ Laporan Berhasil Dibuat! [Kode: {$report->report_code}] dalam {$duration}s");
+                    $this->info("[SUKSES] Laporan berhasil dibuat dan disimpan ke database! [Kode: {$report->report_code}] dalam {$duration}s");
                     $this->line("   - Jenis: {$report->incident_type}");
                     $this->line("   - Lokasi: {$report->location_description}");
+                    $this->line("   - Koordinat: {$report->latitude}, {$report->longitude}");
                     $this->line("   - Ringkasan: {$report->summary}");
                 } else {
-                    $this->comment("Pesan telah ditanggapi (bukan laporan baru atau pesan sambutan).");
+                    $this->comment('[PROSES] Pesan diproses. Menunggu langkah pelapor berikutnya...');
                 }
 
                 $this->newLine();
