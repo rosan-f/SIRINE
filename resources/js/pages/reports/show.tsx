@@ -1,22 +1,30 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
+    AlertTriangle,
     ArrowLeft,
+    CheckCircle2,
     Clock3,
     ExternalLink,
+    History,
     MapPin,
     MessageSquare,
     Navigation,
     Phone,
+    Send,
     ShieldAlert,
     ShieldCheck,
+    Truck,
     User,
+    XCircle,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -36,6 +44,15 @@ type ReportMessage = {
     message_type: string;
     body: string;
     time: string;
+};
+
+type ReportHistoryItem = {
+    id: number;
+    admin_name: string;
+    previous_status: string | null;
+    new_status: string;
+    notes: string | null;
+    created_at: string;
 };
 
 type Report = {
@@ -64,6 +81,7 @@ type Report = {
     input_type?: 'text' | 'voice';
     details: ReportDetail[];
     messages: ReportMessage[];
+    histories: ReportHistoryItem[];
 };
 
 interface ReportShowProps {
@@ -75,6 +93,9 @@ const statusLabels: Record<string, string> = {
     menunggu_informasi: 'Menunggu informasi',
     siap_ditinjau: 'Siap ditinjau',
     dalam_pemeriksaan: 'Dalam pemeriksaan',
+    menuju_lokasi: 'Petugas Menuju Lokasi',
+    dalam_penanganan: 'Sedang Ditangani',
+    selesai: 'Selesai Ditangani',
 };
 
 const statusStyles: Record<string, string> = {
@@ -82,6 +103,9 @@ const statusStyles: Record<string, string> = {
     menunggu_informasi: 'bg-muted text-muted-foreground border-border',
     siap_ditinjau: 'bg-accent text-accent-foreground border-border',
     dalam_pemeriksaan: 'bg-secondary text-secondary-foreground border-border',
+    menuju_lokasi: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    dalam_penanganan: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    selesai: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
 };
 
 const verificationLabels: Record<string, string> = {
@@ -92,11 +116,32 @@ const verificationLabels: Record<string, string> = {
 
 const verificationStyles: Record<string, string> = {
     belum_terkonfirmasi: 'bg-muted text-muted-foreground border-border',
-    terverifikasi: 'bg-accent text-accent-foreground border-border',
+    terverifikasi: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     tidak_valid: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
 export default function ReportShow({ report }: ReportShowProps) {
+    const [customNotes, setCustomNotes] = useState('');
+    const [submittingAction, setSubmittingAction] = useState<string | null>(null);
+
+    const handleUpdateStatus = (action: string) => {
+        setSubmittingAction(action);
+        router.patch(
+            `/laporan/${report.id}/status`,
+            {
+                action,
+                custom_notes: customNotes,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setSubmittingAction(null);
+                    setCustomNotes('');
+                },
+            },
+        );
+    };
+
     const mapsDirectionUrl =
         report.google_maps_url ||
         (report.latitude && report.longitude
@@ -108,7 +153,7 @@ export default function ReportShow({ report }: ReportShowProps) {
             <Head title={`Laporan #${report.code}`} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
-                {/* Navigation Back & Actions */}
+                {/* Navigation Back & Status Badges */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <Link href={reportsIndex()}>
@@ -122,13 +167,13 @@ export default function ReportShow({ report }: ReportShowProps) {
                     <div className="flex items-center gap-2">
                         <Badge
                             variant="outline"
-                            className={cn('rounded-full font-normal px-3 py-1', statusStyles[report.status])}
+                            className={cn('rounded-full font-normal px-3 py-1', statusStyles[report.status] || statusStyles.baru_diterima)}
                         >
                             {statusLabels[report.status] || report.status}
                         </Badge>
                         <Badge
                             variant="outline"
-                            className={cn('rounded-full font-normal px-3 py-1', verificationStyles[report.verification])}
+                            className={cn('rounded-full font-normal px-3 py-1', verificationStyles[report.verification] || verificationStyles.belum_terkonfirmasi)}
                         >
                             {verificationLabels[report.verification] || report.verification}
                         </Badge>
@@ -174,11 +219,85 @@ export default function ReportShow({ report }: ReportShowProps) {
                     </div>
                 </div>
 
+                {/* Action Card: Konfirmasi & Kirim Pesan Petugas */}
+                <Card className="rounded-xl border-2 border-primary/20 bg-primary/5 shadow-xs">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                            <Send className="size-4 text-primary" />
+                            Tindakan Petugas & Balasan Otomatis ke Telegram
+                        </CardTitle>
+                        <CardDescription>
+                            Konfirmasi status laporan di bawah ini. Sistem akan langsung mengirimkan pesan pemberitahuan resmi ke Telegram pelapor tanpa emoticon.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <label
+                                htmlFor="notes"
+                                className="block text-xs font-medium text-muted-foreground mb-1.5"
+                            >
+                                Catatan Tambahan Petugas (Opsional - disertakan ke pesan Telegram):
+                            </label>
+                            <input
+                                id="notes"
+                                type="text"
+                                placeholder="Contoh: Unit Damkar Pos 01 sedang meluncur dengan 2 armada..."
+                                value={customNotes}
+                                onChange={(e) => setCustomNotes(e.target.value)}
+                                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Tombol Utama: Verifikasi & Petugas Menuju Lokasi */}
+                            <Button
+                                type="button"
+                                onClick={() => handleUpdateStatus('dispatch')}
+                                disabled={submittingAction !== null || (report.verification === 'terverifikasi' && report.status === 'menuju_lokasi')}
+                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+                            >
+                                <Truck className="size-4" />
+                                {submittingAction === 'dispatch'
+                                    ? 'Memproses...'
+                                    : 'Verifikasi & Kirim Petugas ke Lokasi'}
+                            </Button>
+
+                            {/* Tombol Selesai Ditangani */}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleUpdateStatus('complete')}
+                                disabled={submittingAction !== null || report.status === 'selesai'}
+                                className="inline-flex items-center gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                            >
+                                <CheckCircle2 className="size-4" />
+                                {submittingAction === 'complete'
+                                    ? 'Memproses...'
+                                    : 'Tandai Selesai Ditangani'}
+                            </Button>
+
+                            {/* Tombol Laporan Tidak Valid */}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleUpdateStatus('invalid')}
+                                disabled={submittingAction !== null || report.verification === 'tidak_valid'}
+                                className="inline-flex items-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 cursor-pointer"
+                            >
+                                <XCircle className="size-4" />
+                                {submittingAction === 'invalid'
+                                    ? 'Memproses...'
+                                    : 'Tandai Tidak Valid'}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* 2-Column Main Content */}
                 <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Left 2 Columns: Details, Description, Conversation */}
+                    {/* Left 2 Columns: Details, Description, Conversation, Histories */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Summary Card */}
+                        {/* Summary & Description Card */}
                         <Card className="rounded-xl border-border shadow-none">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -222,6 +341,48 @@ export default function ReportShow({ report }: ReportShowProps) {
                                         </p>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Status History Timeline */}
+                        <Card className="rounded-xl border-border shadow-none">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                                    <History className="size-4 text-primary" />
+                                    Riwayat Penanganan & Tindakan Petugas
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {report.histories && report.histories.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {report.histories.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className="rounded-lg border border-border p-3.5 bg-muted/20 text-sm"
+                                            >
+                                                <div className="flex items-center justify-between gap-2 mb-1 text-xs">
+                                                    <span className="font-semibold text-foreground">
+                                                        {item.admin_name}
+                                                    </span>
+                                                    <span className="text-muted-foreground">{item.created_at}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                                                    <span>Status:</span>
+                                                    <Badge variant="outline" className="text-xs font-normal">
+                                                        {statusLabels[item.new_status] || item.new_status}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-foreground text-xs leading-relaxed">
+                                                    {item.notes}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">
+                                        Belum ada perubahan status yang dicatat.
+                                    </p>
+                                )}
                             </CardContent>
                         </Card>
 

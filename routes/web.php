@@ -12,6 +12,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('laporan', [ReportController::class, 'index'])->name('reports.index');
     Route::get('laporan/{report}', [ReportController::class, 'show'])->name('reports.show');
+    Route::patch('laporan/{report}/status', [ReportController::class, 'updateStatus'])->name('reports.update-status');
     Route::get('peta', [ReportMapController::class, 'index'])->name('reports.map');
     Route::get('riwayat', [ActivityLogController::class, 'index'])->name('activity.index');
 });

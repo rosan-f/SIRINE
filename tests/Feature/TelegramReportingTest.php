@@ -134,3 +134,56 @@ test('authenticated user can view report show detail page with maps and route in
             ->where('report.longitude', 97.1408)
         );
 });
+
+test('operator can confirm report and send dispatch notification to telegram', function () {
+    $telegramMock = Mockery::mock(TelegramService::class);
+    $telegramMock->shouldReceive('sendMessage')
+        ->once()
+        ->with('123456789', Mockery::on(function ($msg) {
+            return str_contains($msg, 'Terverifikasi - Petugas Menuju Lokasi')
+                && str_contains($msg, 'dalam perjalanan menuju lokasi');
+        }))
+        ->andReturn(['ok' => true]);
+
+    $this->app->instance(TelegramService::class, $telegramMock);
+
+    $user = User::factory()->create();
+    $reporter = Reporter::create([
+        'name' => 'Ahmad',
+        'whatsapp_number' => '123456789',
+    ]);
+
+    $report = Report::create([
+        'report_code' => 'SIGAP-TEST-DISPATCH',
+        'reporter_id' => $reporter->id,
+        'incident_type' => 'Kebakaran',
+        'location_description' => 'Jl. Merdeka No. 1',
+        'latitude' => -5.1802,
+        'longitude' => 97.1408,
+        'location_source' => 'gps',
+        'description' => 'Kebakaran ruko',
+        'report_status' => 'baru_diterima',
+        'verification_status' => 'belum_terkonfirmasi',
+    ]);
+
+    $response = $this->actingAs($user)->patch(route('reports.update-status', $report), [
+        'action' => 'dispatch',
+        'custom_notes' => 'Armada 01 meluncur.',
+    ]);
+
+    $response->assertRedirect();
+
+    $report->refresh();
+    expect($report->verification_status)->toBe('terverifikasi')
+        ->and($report->report_status)->toBe('menuju_lokasi');
+
+    $this->assertDatabaseHas('report_histories', [
+        'report_id' => $report->id,
+        'new_status' => 'menuju_lokasi',
+    ]);
+
+    $this->assertDatabaseHas('messages', [
+        'report_id' => $report->id,
+        'direction' => 'outbound',
+    ]);
+});
