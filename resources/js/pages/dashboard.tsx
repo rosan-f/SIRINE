@@ -80,6 +80,14 @@ const statusStyles: Record<string, string> = {
     selesai: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
 };
 
+const getStatusLabel = (report: RecentReport): string => report.verification === 'tidak_valid'
+    ? 'Ditutup · tidak valid'
+    : statusLabels[report.status] || report.status;
+
+const getStatusStyle = (report: RecentReport): string => report.verification === 'tidak_valid'
+    ? 'bg-destructive/10 text-destructive border-destructive/20'
+    : statusStyles[report.status] || statusStyles.baru_diterima;
+
 export default function Dashboard({
     stats,
     statusSummary,
@@ -168,28 +176,28 @@ export default function Dashboard({
             value: stats.total,
             hint: `${stats.belum_diverifikasi} belum diverifikasi · semua periode`,
             icon: ClipboardList,
-            style: 'text-primary',
+            style: 'bg-primary/10 text-primary',
         },
         {
             label: 'Belum Diverifikasi',
             value: stats.belum_diverifikasi,
             hint: 'Menunggu peninjauan petugas',
             icon: Inbox,
-            style: 'text-muted-foreground',
+            style: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
         },
         {
             label: 'Sedang Ditangani',
             value: stats.sedang_ditangani,
             hint: 'Dalam perjalanan atau menangani kejadian',
             icon: Truck,
-            style: 'text-blue-500',
+            style: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
         },
         {
             label: 'Selesai Ditangani',
             value: stats.selesai_ditangani,
             hint: `${stats.tidak_valid} laporan tidak valid dihitung terpisah`,
             icon: CheckCircle2,
-            style: 'text-emerald-500',
+            style: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         },
     ];
 
@@ -197,29 +205,42 @@ export default function Dashboard({
         <>
             <Head title="Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 md:p-6">
+            <div className="flex h-full min-w-0 flex-1 flex-col gap-7 bg-muted/20 p-4 md:p-8">
                 {/* Header Section */}
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                            Pusat operasi
+                        </p>
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                             Dashboard Pemantauan SIRINE
                         </h1>
-                        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                            Pantau laporan darurat yang masuk melalui bot Telegram dan kendalikan proses integrasi secara terpusat.
+                        <p className="max-w-2xl text-sm text-muted-foreground">
+                            Pantau kebutuhan tindak lanjut, laporan terbaru, dan koneksi bot dari satu tempat.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs">
+                    <div className={cn(
+                        'flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-sm',
+                        isRunning ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-border/70 bg-card',
+                    )}>
                         <span
                             className={cn(
-                                'size-2 rounded-full',
-                                isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-400',
+                                'relative flex size-3 items-center justify-center rounded-full',
+                                isRunning ? 'bg-emerald-500/20' : 'bg-muted',
                             )}
-                        />
-                        <span className="font-medium text-foreground">
-                            Bot Telegram: {isRunning ? 'Aktif Berjalan' : 'Berhenti'}
+                        >
+                            <span className={cn('size-1.5 rounded-full', isRunning ? 'animate-pulse bg-emerald-500' : 'bg-muted-foreground/50')} />
                         </span>
-                        {pid && <span className="text-muted-foreground">(PID: {pid})</span>}
+                        <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Koneksi Telegram
+                            </p>
+                            <p className="text-sm font-semibold text-foreground">
+                                {isRunning ? 'Bot sedang aktif' : 'Bot sedang berhenti'}
+                            </p>
+                        </div>
+                        {pid && <Badge variant="outline" className="ml-1 rounded-full bg-background/70 font-mono text-[10px] text-muted-foreground">PID {pid}</Badge>}
                     </div>
                 </div>
 
@@ -228,15 +249,15 @@ export default function Dashboard({
                     {topCards.map((stat) => (
                         <Card
                             key={stat.label}
-                            className="gap-4 rounded-xl border-border py-5 shadow-none"
+                            className="gap-4 rounded-2xl border-border/70 bg-card py-5 shadow-sm transition-shadow hover:shadow-md"
                         >
                             <CardContent className="px-5">
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                             {stat.label}
                                         </p>
-                                        <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
                                             {stat.value}
                                         </p>
                                         <p className="mt-1 text-xs text-muted-foreground">
@@ -244,8 +265,8 @@ export default function Dashboard({
                                         </p>
                                     </div>
 
-                                    <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                                        <stat.icon className={cn('size-5', stat.style)} />
+                                    <div className={cn('flex size-11 items-center justify-center rounded-xl', stat.style)}>
+                                        <stat.icon className="size-5" aria-hidden="true" />
                                     </div>
                                 </div>
                             </CardContent>
@@ -254,23 +275,23 @@ export default function Dashboard({
                 </div>
 
                 {/* Main 2-Column: Left (Recent Reports & Summary) | Right (Live Poller Logs & Controls) */}
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
                     {/* Left Column: Recent Reports */}
                     <div className="space-y-6">
-                        <Card className="rounded-xl border-border shadow-none">
+                        <Card className="rounded-2xl border-border/70 bg-card shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between pb-3">
                                 <div>
                                     <CardTitle className="text-base font-semibold text-foreground">
-                                        Laporan Kejadian Terbaru
+                                        Laporan terbaru
                                     </CardTitle>
                                     <CardDescription>
-                                        Daftar laporan riil yang baru masuk ke sistem.
+                                        Laporan yang paling baru diterima oleh sistem.
                                     </CardDescription>
                                 </div>
 
                                 <Link href={reportsIndex()}>
-                                    <Button variant="ghost" size="sm" className="gap-1 text-xs cursor-pointer">
-                                        Lihat Semua
+                                    <Button variant="ghost" size="sm" className="gap-1 text-xs">
+                                        Semua laporan
                                         <ExternalLink className="size-3" />
                                     </Button>
                                 </Link>
@@ -278,38 +299,38 @@ export default function Dashboard({
 
                             <CardContent>
                                 {recentReports.length > 0 ? (
-                                    <div className="divide-y divide-border">
+                                    <div className="divide-y divide-border/70">
                                         {recentReports.map((report) => (
                                             <Link
                                                 key={report.code}
                                                 href={`/laporan/${report.id}`}
-                                                className="flex items-center justify-between py-3 transition-colors hover:bg-muted/20 px-2 rounded-lg"
+                                                className="flex items-center justify-between gap-3 rounded-xl px-3 py-4 transition-colors hover:bg-muted/50"
                                             >
                                                 <div className="min-w-0 flex-1 pr-4">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-sm text-foreground">
+                                                        <span className="text-sm font-semibold text-foreground">
                                                             {report.type}
                                                         </span>
-                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
                                                             #{report.code}
                                                         </span>
                                                     </div>
 
-                                                    <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1 line-clamp-1">
+                                                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground line-clamp-1">
                                                         <MapPin className="size-3 shrink-0" />
                                                         {report.location}
                                                     </p>
                                                 </div>
 
-                                                <div className="text-right shrink-0">
+                                                <div className="shrink-0 text-right">
                                                     <Badge
                                                         variant="outline"
                                                         className={cn(
                                                             'rounded-full text-xs font-normal',
-                                                            statusStyles[report.status] || statusStyles.baru_diterima,
+                                                            getStatusStyle(report),
                                                         )}
                                                     >
-                                                        {statusLabels[report.status] || report.status}
+                                                        {getStatusLabel(report)}
                                                     </Badge>
                                                     <p className="mt-1 text-xs text-muted-foreground">
                                                         {report.time}
@@ -319,21 +340,23 @@ export default function Dashboard({
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-8 text-center text-sm text-muted-foreground">
-                                        Belum ada laporan masuk di database.
+                                    <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
+                                        <Inbox className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
+                                        <p className="mt-3 font-medium text-foreground">Belum ada laporan</p>
+                                        <p className="mt-1 text-sm text-muted-foreground">Laporan dari warga akan muncul di sini.</p>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
 
                         {/* Status Summary Progress */}
-                        <Card className="rounded-xl border-border shadow-none">
+                        <Card className="rounded-2xl border-border/70 bg-card shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base font-semibold text-foreground">
                                     Status Laporan
                                 </CardTitle>
                                 <CardDescription>
-                                    Persentase dari semua laporan. Laporan tidak valid dipisahkan dari laporan selesai ditangani.
+                                    Setiap bar menunjukkan bagian dari seluruh laporan. Data tidak valid ditampilkan terpisah.
                                 </CardDescription>
                             </CardHeader>
 
@@ -365,31 +388,33 @@ export default function Dashboard({
                     </div>
 
                     {/* Right Column: Telegram Poller Live Logs & Controls */}
-                    <div>
-                        <Card className="rounded-xl border-border shadow-none flex flex-col h-full">
-                            <CardHeader className="pb-3 border-b border-border">
+                <div className="min-w-0">
+                    <Card className="flex h-full flex-col rounded-2xl border-border/70 bg-card shadow-sm">
+                        <CardHeader className="border-b border-border/70 pb-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                            <Terminal className="size-4 text-primary" />
-                                            Log Aktivitas Telegram (telegram:poll)
+                                        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                                            <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                <Terminal className="size-4" aria-hidden="true" />
+                                            </span>
+                                            Aktivitas bot
                                         </CardTitle>
-                                        <CardDescription>
-                                            Pantau proses background polling pesan masuk secara real-time.
+                                        <CardDescription className="mt-1">
+                                            Log proses penerimaan pesan Telegram.
                                         </CardDescription>
                                     </div>
 
                                     {/* Action Buttons: Start, Stop, Refresh */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <Button
                                             type="button"
                                             size="sm"
                                             onClick={handleStartPoller}
                                             disabled={isRunning || isActionLoading}
-                                            className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-8 text-xs"
+                                            className="h-9 cursor-pointer bg-emerald-600 text-xs text-white hover:bg-emerald-700"
                                         >
                                             <Play className="size-3.5 fill-current" />
-                                            Mulai Poller
+                                            {isActionLoading && !isRunning ? 'Menjalankan…' : 'Mulai bot'}
                                         </Button>
 
                                         <Button
@@ -398,10 +423,10 @@ export default function Dashboard({
                                             variant="destructive"
                                             onClick={handleStopPoller}
                                             disabled={!isRunning || isActionLoading}
-                                            className="inline-flex items-center gap-1.5 cursor-pointer h-8 text-xs"
+                                            className="h-9 cursor-pointer text-xs"
                                         >
                                             <Square className="size-3.5 fill-current" />
-                                            Hentikan
+                                            {isActionLoading && isRunning ? 'Menghentikan…' : 'Hentikan'}
                                         </Button>
 
                                         <Button
@@ -410,8 +435,9 @@ export default function Dashboard({
                                             variant="outline"
                                             onClick={handleManualRefresh}
                                             disabled={isRefreshing}
-                                            className="h-8 w-8 cursor-pointer"
-                                            title="Segarkan Log"
+                                            className="size-9 cursor-pointer rounded-xl"
+                                            title="Segarkan log"
+                                            aria-label="Segarkan log"
                                         >
                                             <RefreshCw className={cn('size-3.5', isRefreshing && 'animate-spin')} />
                                         </Button>
@@ -419,15 +445,17 @@ export default function Dashboard({
                                 </div>
                             </CardHeader>
 
-                            <CardContent className="p-0 flex-1 flex flex-col">
+                            <CardContent className="flex flex-1 flex-col p-0">
                                 {/* Terminal Console Window */}
                                 <div
                                     ref={logContainerRef}
-                                    className="flex-1 min-h-120 max-h-140 overflow-y-auto bg-neutral-950 p-4 font-mono text-xs text-neutral-300 leading-relaxed space-y-1 rounded-b-xl selection:bg-neutral-800"
+                                    className="min-h-120 max-h-140 flex-1 space-y-1 overflow-y-auto rounded-b-2xl bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-300 selection:bg-neutral-800"
                                 >
-                                    <div className="text-neutral-500 pb-2 border-b border-neutral-800 mb-2 flex items-center justify-between">
-                                        <span>Terminal SIRINE Daemon Poller</span>
-                                        <span>Status: {isRunning ? 'RUNNING' : 'STOPPED'}</span>
+                                    <div className="mb-3 flex items-center justify-between border-b border-neutral-800 pb-3 text-[11px]">
+                                        <span className="text-neutral-400">LOG SISTEM</span>
+                                        <span className={cn('rounded-full px-2 py-1 font-semibold', isRunning ? 'bg-emerald-500/10 text-emerald-400' : 'bg-neutral-800 text-neutral-400')}>
+                                            {isRunning ? 'AKTIF' : 'BERHENTI'}
+                                        </span>
                                     </div>
 
                                     {logs.length > 0 ? (
