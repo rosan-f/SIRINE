@@ -1,15 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ClipboardList,
-    Clock3,
     Eye,
     Inbox,
     MapPin,
     Navigation,
     RotateCcw,
     Search,
-    ShieldAlert,
-    ShieldCheck,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -153,43 +149,6 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
         (report) => report.verification === 'tidak_valid',
     ).length;
 
-    const stats = [
-        {
-            label: 'Total laporan',
-            value: reports.length,
-            description: 'Semua laporan tersimpan',
-            icon: ClipboardList,
-            tone: 'text-primary bg-primary/10',
-        },
-        {
-            label: 'Belum diverifikasi',
-            value: unverifiedCount,
-            description: 'Menunggu peninjauan petugas',
-            icon: Inbox,
-            tone: 'text-amber-600 bg-amber-500/10 dark:text-amber-400',
-        },
-        {
-            label: 'Sedang ditangani',
-            value: inProgressCount,
-            description: 'Menuju lokasi atau ditangani',
-            icon: Clock3,
-            tone: 'text-blue-600 bg-blue-500/10 dark:text-blue-400',
-        },
-        {
-            label: 'Selesai ditangani',
-            value: completedCount,
-            description: 'Laporan tidak valid dihitung terpisah',
-            icon: ShieldCheck,
-            tone: 'text-emerald-600 bg-emerald-500/10 dark:text-emerald-400',
-        },
-        {
-            label: 'Tidak valid',
-            value: invalidCount,
-            description: 'Tidak dihitung sebagai selesai ditangani',
-            icon: ShieldAlert,
-            tone: 'text-destructive bg-destructive/10',
-        },
-    ];
     const resetFilters = () => {
         setSearch('');
         setStatusFilter('semua');
@@ -232,42 +191,9 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                         Laporan Kejadian
                         </h1>
                         <p className="max-w-2xl text-sm text-muted-foreground">
-                            Pantau verifikasi dan tindak lanjut laporan warga. Ringkasan di bawah mencakup semua laporan.
+                            Tinjau laporan warga, verifikasi informasi, dan pantau tindak lanjut.
                         </p>
                     </div>
-                    <Badge variant="outline" className="rounded-full border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
-                        {reports.length} laporan tersimpan
-                    </Badge>
-                </div>
-
-                {/* Statistics Cards */}
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                    {stats.map((stat) => (
-                        <Card
-                            key={stat.label}
-                            className="rounded-2xl border-border/70 bg-card py-5 shadow-sm transition-shadow hover:shadow-md"
-                        >
-                            <CardContent className="px-5">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                            {stat.label}
-                                        </p>
-                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-                                            {stat.value}
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {stat.description}
-                                        </p>
-                                    </div>
-
-                                    <div className={cn('flex size-11 items-center justify-center rounded-xl', stat.tone)}>
-                                        <stat.icon className="size-5" aria-hidden="true" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
                 </div>
 
                 {/* Report Table Card */}
