@@ -14,6 +14,8 @@ class ReportHistory extends Model
         'admin_id',
         'previous_status',
         'new_status',
+        'previous_verification_status',
+        'new_verification_status',
         'notes',
         'created_at',
     ];

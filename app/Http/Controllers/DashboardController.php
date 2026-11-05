@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Report;
+use App\Services\ActivityFeedService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -13,7 +14,7 @@ class DashboardController extends Controller
     /**
      * Render system monitoring dashboard with aggregated metrics.
      */
-    public function index(): Response
+    public function index(ActivityFeedService $activityFeed): Response
     {
         $totalReports = Report::count();
         $sedangDitangani = Report::whereIn('report_status', ['menuju_lokasi', 'dalam_penanganan'])
@@ -67,22 +68,6 @@ class DashboardController extends Controller
             'bar' => 'bg-rose-500',
         ];
 
-        $recentReports = Report::with('reporter')
-            ->latest()
-            ->take(6)
-            ->get()
-            ->map(function ($report) {
-                return [
-                    'id' => $report->id,
-                    'code' => $report->report_code,
-                    'type' => $report->incident_type ?? 'Laporan Kejadian',
-                    'location' => $report->location_description ?? '-',
-                    'status' => $report->report_status ?? 'baru_diterima',
-                    'verification' => $report->verification_status ?? 'belum_terkonfirmasi',
-                    'time' => $report->created_at ? $report->created_at->diffForHumans() : '-',
-                ];
-            });
-
         $pollerInfo = $this->checkPollerStatus();
         $logs = $this->getRecentLogs(35);
 
@@ -95,7 +80,7 @@ class DashboardController extends Controller
                 'tidak_valid' => $tidakValid,
             ],
             'statusSummary' => $statusSummary,
-            'recentReports' => $recentReports,
+            'activities' => $activityFeed->latest(6),
             'poller' => [
                 'is_running' => $pollerInfo['is_running'],
                 'pid' => $pollerInfo['pid'],
@@ -117,7 +102,8 @@ class DashboardController extends Controller
         $basePath = base_path();
         $logPath = storage_path('logs/telegram_poll.log');
         $timestamp = now()->format('Y-m-d H:i:s');
-        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Memulai daemon polling dari dashboard...\n", FILE_APPEND);
+        $actorName = auth()->user()?->name ?? 'Petugas';
+        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Memulai daemon polling dari dashboard oleh {$actorName}.\n", FILE_APPEND);
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $cmd = 'start /B php artisan telegram:poll';
@@ -152,7 +138,8 @@ class DashboardController extends Controller
 
         $logPath = storage_path('logs/telegram_poll.log');
         $timestamp = now()->format('Y-m-d H:i:s');
-        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Daemon polling dihentikan oleh admin.\n", FILE_APPEND);
+        $actorName = auth()->user()?->name ?? 'Petugas';
+        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Daemon polling dihentikan oleh {$actorName}.\n", FILE_APPEND);
 
         return redirect()->back()->with('success', 'Bot Poller Telegram telah dihentikan.');
     }

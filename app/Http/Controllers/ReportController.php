@@ -146,6 +146,7 @@ class ReportController extends Controller
         $reporterName = $reporter?->name ?? 'Pelapor';
         $chatId = $reporter?->whatsapp_number;
         $oldStatus = $report->report_status;
+        $oldVerification = $report->verification_status;
 
         $newVerification = $report->verification_status;
         $newReportStatus = $report->report_status;
@@ -203,6 +204,8 @@ class ReportController extends Controller
             'admin_id' => auth()->id(),
             'previous_status' => $oldStatus,
             'new_status' => $newReportStatus,
+            'previous_verification_status' => $oldVerification,
+            'new_verification_status' => $newVerification,
             'notes' => $note,
             'created_at' => now(),
         ]);

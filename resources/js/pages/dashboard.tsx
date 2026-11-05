@@ -4,7 +4,6 @@ import {
     ClipboardList,
     ExternalLink,
     Inbox,
-    MapPin,
     Play,
     RefreshCw,
     Square,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { ActivityTimeline, type ActivityEvent } from '@/components/activity-timeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,23 +24,7 @@ import {
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import { index as reportsIndex } from '@/routes/reports';
-
-type ReportStatus =
-    | 'baru_diterima'
-    | 'menuju_lokasi'
-    | 'dalam_penanganan'
-    | 'selesai';
-
-type RecentReport = {
-    id: number;
-    code: string;
-    type: string;
-    location: string;
-    status: ReportStatus;
-    verification: string;
-    time: string;
-};
+import { index as activityIndex } from '@/routes/activity';
 
 type StatusSummaryItem = {
     label: string;
@@ -58,7 +42,7 @@ interface DashboardProps {
         tidak_valid: number;
     };
     statusSummary: StatusSummaryItem[];
-    recentReports: RecentReport[];
+    activities: ActivityEvent[];
     poller: {
         is_running: boolean;
         pid: number | null;
@@ -66,32 +50,10 @@ interface DashboardProps {
     };
 }
 
-const statusLabels: Record<string, string> = {
-    baru_diterima: 'Baru diterima',
-    menuju_lokasi: 'Petugas Menuju Lokasi',
-    dalam_penanganan: 'Dalam Penanganan',
-    selesai: 'Selesai Ditangani',
-};
-
-const statusStyles: Record<string, string> = {
-    baru_diterima: 'bg-muted text-muted-foreground border-border',
-    menuju_lokasi: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    dalam_penanganan: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    selesai: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-};
-
-const getStatusLabel = (report: RecentReport): string => report.verification === 'tidak_valid'
-    ? 'Ditutup · tidak valid'
-    : statusLabels[report.status] || report.status;
-
-const getStatusStyle = (report: RecentReport): string => report.verification === 'tidak_valid'
-    ? 'bg-destructive/10 text-destructive border-destructive/20'
-    : statusStyles[report.status] || statusStyles.baru_diterima;
-
 export default function Dashboard({
     stats,
     statusSummary,
-    recentReports,
+    activities,
     poller,
 }: DashboardProps) {
     const [isRunning, setIsRunning] = useState(poller.is_running);
@@ -282,70 +244,23 @@ export default function Dashboard({
                             <CardHeader className="flex flex-row items-center justify-between pb-3">
                                 <div>
                                     <CardTitle className="text-base font-semibold text-foreground">
-                                        Laporan terbaru
+                                        Riwayat aktivitas
                                     </CardTitle>
                                     <CardDescription>
-                                        Laporan yang paling baru diterima oleh sistem.
+                                        Perubahan terbaru pada laporan dan koneksi bot.
                                     </CardDescription>
                                 </div>
 
-                                <Link href={reportsIndex()}>
+                                <Link href={activityIndex()}>
                                     <Button variant="ghost" size="sm" className="gap-1 text-xs">
-                                        Semua laporan
+                                        Lihat semua
                                         <ExternalLink className="size-3" />
                                     </Button>
                                 </Link>
                             </CardHeader>
 
                             <CardContent>
-                                {recentReports.length > 0 ? (
-                                    <div className="divide-y divide-border/70">
-                                        {recentReports.map((report) => (
-                                            <Link
-                                                key={report.code}
-                                                href={`/laporan/${report.id}`}
-                                                className="flex items-center justify-between gap-3 rounded-xl px-3 py-4 transition-colors hover:bg-muted/50"
-                                            >
-                                                <div className="min-w-0 flex-1 pr-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-semibold text-foreground">
-                                                            {report.type}
-                                                        </span>
-                                                        <span className="font-mono text-[11px] text-muted-foreground">
-                                                            #{report.code}
-                                                        </span>
-                                                    </div>
-
-                                                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground line-clamp-1">
-                                                        <MapPin className="size-3 shrink-0" />
-                                                        {report.location}
-                                                    </p>
-                                                </div>
-
-                                                <div className="shrink-0 text-right">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={cn(
-                                                            'rounded-full text-xs font-normal',
-                                                            getStatusStyle(report),
-                                                        )}
-                                                    >
-                                                        {getStatusLabel(report)}
-                                                    </Badge>
-                                                    <p className="mt-1 text-xs text-muted-foreground">
-                                                        {report.time}
-                                                    </p>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
-                                        <Inbox className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
-                                        <p className="mt-3 font-medium text-foreground">Belum ada laporan</p>
-                                        <p className="mt-1 text-sm text-muted-foreground">Laporan dari warga akan muncul di sini.</p>
-                                    </div>
-                                )}
+                                <ActivityTimeline activities={activities} compact />
                             </CardContent>
                         </Card>
 

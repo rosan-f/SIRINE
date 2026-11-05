@@ -372,6 +372,8 @@ test('operator can confirm report and send dispatch notification to telegram', f
     $this->assertDatabaseHas('report_histories', [
         'report_id' => $report->id,
         'new_status' => 'menuju_lokasi',
+        'previous_verification_status' => 'belum_terkonfirmasi',
+        'new_verification_status' => 'terverifikasi',
     ]);
 
     $this->assertDatabaseHas('messages', [
