@@ -7,6 +7,7 @@ use App\Services\AI\GeminiService;
 use App\Services\IncidentReportService;
 use App\Services\Telegram\TelegramService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
 
@@ -25,6 +26,38 @@ test('gemini service parses report template without calling external api', funct
         ->and($result['description'])->toBe('Api sudah menjalar ke atap rumah tetangga')
         ->and($result['victim_count'])->toBe(2)
         ->and($result['victim_condition'])->toBe('2 orang luka bakar ringan');
+});
+
+test('gemini service extracts transcript text from audio response parts', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [[
+                'content' => [
+                    'parts' => [
+                        ['text' => 'Terjadi kebakaran di'],
+                        ['text' => 'rumah warga dekat pasar.'],
+                    ],
+                ],
+            ]],
+        ]),
+    ]);
+
+    $transcript = (new GeminiService)->transcribeAudio('voice-binary', 'audio/ogg');
+
+    expect($transcript)->toBe("Terjadi kebakaran di\nrumah warga dekat pasar.");
+    Http::assertSent(fn ($request): bool => $request->isJson()
+        && data_get($request->data(), 'contents.0.parts.1.inline_data.mime_type') === 'audio/ogg'
+        && data_get($request->data(), 'contents.0.parts.1.inline_data.data') === base64_encode('voice-binary'));
+});
+
+test('gemini service recognizes emergency reports and rejects unrelated requests', function () {
+    $service = new GeminiService;
+
+    expect($service->isPotentialEmergencyReport('Ada kebakaran di rumah warga'))
+        ->toBeTrue()
+        ->and($service->isPotentialEmergencyReport('Buatkan resep makanan rendang'))
+        ->toBeFalse();
 });
 
 test('incident report service processes 2-step flow: location then template', function () {
@@ -94,6 +127,81 @@ test('incident report service processes 2-step flow: location then template', fu
         'latitude' => 4.47123,
         'longitude' => 97.96541,
     ]);
+});
+
+test('voice note transcript is saved as the incoming message text', function () {
+    $telegramMock = Mockery::mock(TelegramService::class);
+    $telegramMock->shouldReceive('getFile')->once()->with('voice-file-id')->andReturn(['file_path' => 'voice/file.oga']);
+    $telegramMock->shouldReceive('downloadFile')->once()->with('voice/file.oga')->andReturn('voice-binary');
+    $telegramMock->shouldReceive('sendMessage')->once()->andReturn(['ok' => true]);
+
+    $geminiMock = Mockery::mock(GeminiService::class);
+    $geminiMock->shouldReceive('transcribeAudio')->once()->with('voice-binary', 'audio/ogg')->andReturn('Terjadi kebakaran di rumah saya');
+    $geminiMock->shouldReceive('isPotentialEmergencyReport')->once()->with('Terjadi kebakaran di rumah saya')->andReturnTrue();
+
+    $service = new IncidentReportService($telegramMock, $geminiMock);
+    $service->handleIncomingTelegramUpdate([
+        'message' => [
+            'message_id' => 71,
+            'from' => ['first_name' => 'Rina'],
+            'chat' => ['id' => 12345],
+            'voice' => ['file_id' => 'voice-file-id'],
+        ],
+    ]);
+
+    $this->assertDatabaseHas('messages', [
+        'wa_message_id' => 'tg_71_12345',
+        'message_type' => 'audio',
+        'body' => 'Terjadi kebakaran di rumah saya',
+        'transcript' => 'Terjadi kebakaran di rumah saya',
+        'process_status' => 'pending',
+    ]);
+});
+
+test('unrelated telegram text is rejected without saving an inbound message', function () {
+    $telegramMock = Mockery::mock(TelegramService::class);
+    $telegramMock->shouldReceive('sendMessage')->once()->andReturn(['ok' => true]);
+
+    $geminiMock = Mockery::mock(GeminiService::class);
+    $geminiMock->shouldReceive('isPotentialEmergencyReport')->once()->with('Buatkan resep makanan rendang')->andReturnFalse();
+
+    $service = new IncidentReportService($telegramMock, $geminiMock);
+    $service->handleIncomingTelegramUpdate([
+        'message' => [
+            'message_id' => 72,
+            'from' => ['first_name' => 'Rina'],
+            'chat' => ['id' => 12345],
+            'text' => 'Buatkan resep makanan rendang',
+        ],
+    ]);
+
+    $this->assertDatabaseCount('messages', 0);
+    $this->assertDatabaseCount('reports', 0);
+    $this->assertDatabaseCount('reporters', 0);
+});
+
+test('voice note without a transcript is not processed as a report', function () {
+    $telegramMock = Mockery::mock(TelegramService::class);
+    $telegramMock->shouldReceive('getFile')->once()->with('voice-file-id')->andReturn(['file_path' => 'voice/file.oga']);
+    $telegramMock->shouldReceive('downloadFile')->once()->with('voice/file.oga')->andReturn('voice-binary');
+    $telegramMock->shouldReceive('sendMessage')->once()->andReturn(['ok' => true]);
+
+    $geminiMock = Mockery::mock(GeminiService::class);
+    $geminiMock->shouldReceive('transcribeAudio')->once()->with('voice-binary', 'audio/ogg')->andReturnNull();
+    $geminiMock->shouldNotReceive('isPotentialEmergencyReport');
+
+    $service = new IncidentReportService($telegramMock, $geminiMock);
+    $service->handleIncomingTelegramUpdate([
+        'message' => [
+            'message_id' => 73,
+            'from' => ['first_name' => 'Rina'],
+            'chat' => ['id' => 12345],
+            'voice' => ['file_id' => 'voice-file-id'],
+        ],
+    ]);
+
+    $this->assertDatabaseCount('messages', 0);
+    $this->assertDatabaseCount('reports', 0);
 });
 
 test('authenticated user can view report index with real database reports and route link', function () {

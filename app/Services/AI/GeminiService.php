@@ -49,6 +49,10 @@ class GeminiService
                     }
 
                     $status = $response->status();
+                    Log::warning('Gemini API returned an unsuccessful response.', [
+                        'model' => $modelName,
+                        'status' => $status,
+                    ]);
                     if ($status === 503) {
                         usleep(500000);
 
@@ -93,11 +97,30 @@ class GeminiService
         ];
 
         $result = $this->callGemini($payload, 30);
-        if ($result && isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-            return trim((string) $result['candidates'][0]['content']['parts'][0]['text']);
+        $parts = $result['candidates'][0]['content']['parts'] ?? [];
+        if (is_array($parts)) {
+            $transcript = collect($parts)
+                ->pluck('text')
+                ->filter(fn ($text): bool => is_string($text) && trim($text) !== '')
+                ->implode("\n");
+
+            if ($transcript !== '') {
+                return trim($transcript);
+            }
         }
 
         return null;
+    }
+
+    /**
+     * Avoid treating unrelated Telegram messages as emergency reports.
+     */
+    public function isPotentialEmergencyReport(string $text): bool
+    {
+        return preg_match(
+            '/\b(?:darurat|kebakaran|terbakar|kecelakaan|tabrakan|menabrak|tertabrak|banjir|longsor|gempa|tsunami|pohon tumbang|puting beliung|angin kencang|ledakan|meledak|kebocoran gas|tenggelam|hanyut|terjebak|tertimbun|tertimpa|terjatuh|pingsan|sesak napas|tidak sadarkan diri|keracunan|luka|berdarah|korban|ambulans|evakuasi|tersengat|tersetrum|korsleting|rumah roboh|bangunan roboh|orang hilang|kekerasan|minta pertolongan)\b/iu',
+            $text
+        ) === 1;
     }
 
     /**

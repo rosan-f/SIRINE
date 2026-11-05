@@ -10,6 +10,7 @@ use App\Models\Reporter;
 use App\Services\AI\GeminiService;
 use App\Services\Telegram\TelegramService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -78,20 +79,40 @@ class IncidentReportService
             $messageType = 'audio';
             $inputType = 'voice';
             $audioInfo = $message['voice'] ?? $message['audio'];
-            $fileId = $audioInfo['file_id'];
+            $fileId = $audioInfo['file_id'] ?? null;
 
-            $telegramFile = $this->telegramService->getFile($fileId);
+            $telegramFile = $fileId ? $this->telegramService->getFile($fileId) : null;
             if ($telegramFile && isset($telegramFile['file_path'])) {
                 $binary = $this->telegramService->downloadFile($telegramFile['file_path']);
-                if ($binary) {
+                if ($binary !== null && $binary !== '') {
                     $ext = pathinfo($telegramFile['file_path'], PATHINFO_EXTENSION) ?: 'oga';
                     $fileName = 'audio_'.time().'_'.Str::random(8).'.'.$ext;
-                    $savedAudioPath = "private/audio/{$fileName}";
-                    Storage::disk('local')->put($savedAudioPath, $binary);
 
                     $transcript = $this->geminiService->transcribeAudio($binary, 'audio/ogg');
-                    $textToProcess = $transcript ?: 'Rekaman suara laporan kejadian darurat';
+                    $transcript = is_string($transcript) ? trim($transcript) : null;
+                    $textToProcess = $transcript ?? '';
+
+                    if ($textToProcess !== '') {
+                        $savedAudioPath = "private/audio/{$fileName}";
+                        Storage::disk('local')->put($savedAudioPath, $binary);
+                    }
                 }
+            }
+
+            if ($textToProcess === '') {
+                Log::warning('Voice note Telegram gagal ditranskripsikan.', [
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                    'file_id_present' => $fileId !== null,
+                    'file_downloaded' => isset($binary) && $binary !== null && $binary !== '',
+                ]);
+                $this->telegramService->sendMessage(
+                    $chatId,
+                    'Maaf, rekaman suara belum berhasil kami ubah menjadi teks. Silakan kirim ulang voice note dengan suara yang jelas atau tulis laporan dalam bentuk teks.',
+                    (int) $messageId
+                );
+
+                return null;
             }
         } elseif (isset($message['location'])) {
             $messageType = 'location';
@@ -104,6 +125,16 @@ class IncidentReportService
         }
 
         if (empty(trim($textToProcess))) {
+            return null;
+        }
+
+        if (in_array($messageType, ['text', 'audio'], true) && ! $this->geminiService->isPotentialEmergencyReport($textToProcess)) {
+            $this->telegramService->sendMessage(
+                $chatId,
+                'Pesan ini belum terlihat seperti laporan keadaan darurat. Bot SIRINE hanya menerima laporan seperti kebakaran, kecelakaan, banjir, pohon tumbang, atau keadaan medis darurat. Silakan kirim keterangan kejadian dan lokasi.',
+                (int) $messageId
+            );
+
             return null;
         }
 
