@@ -1,18 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    AlertTriangle,
     ArrowLeft,
     CheckCircle2,
+    ChevronDown,
     Clock3,
     ExternalLink,
+    FileText,
     History,
     MapPin,
     MessageSquare,
     Navigation,
     Phone,
     Send,
-    ShieldAlert,
-    ShieldCheck,
     Truck,
     User,
     XCircle,
@@ -29,7 +28,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { index as reportsIndex } from '@/routes/reports';
+import { index as reportsIndex, updateStatus as updateReportStatus } from '@/routes/reports';
 
 type ReportDetail = {
     id: number;
@@ -51,6 +50,8 @@ type ReportHistoryItem = {
     admin_name: string;
     previous_status: string | null;
     new_status: string;
+    previous_verification_status: string | null;
+    new_verification_status: string | null;
     notes: string | null;
     created_at: string;
 };
@@ -127,7 +128,7 @@ export default function ReportShow({ report }: ReportShowProps) {
     const handleUpdateStatus = (action: string) => {
         setSubmittingAction(action);
         router.patch(
-            `/laporan/${report.id}/status`,
+            updateReportStatus.url(report.id),
             {
                 action,
                 custom_notes: customNotes,
@@ -152,380 +153,353 @@ export default function ReportShow({ report }: ReportShowProps) {
         <>
             <Head title={`Laporan #${report.code}`} />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
-                {/* Navigation Back & Status Badges */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <Link href={reportsIndex()}>
-                            <Button variant="outline" size="sm" className="gap-2 cursor-pointer">
-                                <ArrowLeft className="size-4" />
-                                Kembali ke Daftar Laporan
-                            </Button>
-                        </Link>
-                    </div>
+            <div className="min-h-full bg-muted/20 px-4 py-5 md:px-8 md:py-7">
+                <main className="mx-auto flex w-full max-w-7xl flex-col gap-5 md:gap-6">
+                    <Link href={reportsIndex()} className="inline-flex w-fit items-center gap-2 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <ArrowLeft className="size-4" aria-hidden="true" />
+                        Kembali ke daftar laporan
+                    </Link>
 
-                    <div className="flex items-center gap-2">
-                        <Badge
-                            variant="outline"
-                            className={cn('rounded-full font-normal px-3 py-1', statusStyles[report.status] || statusStyles.baru_diterima)}
-                        >
-                            {statusLabels[report.status] || report.status}
-                        </Badge>
-                        <Badge
-                            variant="outline"
-                            className={cn('rounded-full font-normal px-3 py-1', verificationStyles[report.verification] || verificationStyles.belum_terkonfirmasi)}
-                        >
-                            {verificationLabels[report.verification] || report.verification}
-                        </Badge>
-                    </div>
-                </div>
+                    <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-7">
+                        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-mono text-xs font-medium text-muted-foreground">
+                                        #{report.code}
+                                    </span>
+                                    <Badge variant="secondary" className="rounded-full font-normal">
+                                        {report.input_type === 'voice' ? 'Voice note' : 'Pesan teks'}
+                                    </Badge>
+                                    {report.completeness === 'incomplete' && (
+                                        <Badge variant="outline" className="rounded-full border-amber-500/30 bg-amber-500/10 font-normal text-amber-700 dark:text-amber-300">
+                                            Data belum lengkap
+                                        </Badge>
+                                    )}
+                                </div>
 
-                {/* Page Title & Main Overview */}
-                <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono text-sm text-muted-foreground">
-                                    #{report.code}
-                                </span>
-                                <Badge variant="secondary" className="font-normal text-xs">
-                                    {report.input_type === 'voice' ? 'Voice Note' : 'Pesan Teks'}
+                                <div className="space-y-1.5">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                                        Detail laporan kejadian
+                                    </p>
+                                    <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+                                        {report.type}
+                                    </h1>
+                                </div>
+
+                                <div className="flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-5">
+                                    <span className="inline-flex items-center gap-2">
+                                        <Clock3 className="size-4 shrink-0" aria-hidden="true" />
+                                        Diterima {report.date}
+                                    </span>
+                                    <span className="sm:border-l sm:border-border sm:pl-5">
+                                        Waktu kejadian: {report.incident_time}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 lg:max-w-72 lg:justify-end">
+                                <Badge
+                                    variant="outline"
+                                    className={cn('rounded-full px-3 py-1.5 font-medium', statusStyles[report.status] || statusStyles.baru_diterima)}
+                                >
+                                    {statusLabels[report.status] || report.status}
                                 </Badge>
-                                <Badge variant="outline" className="font-normal text-xs">
-                                    {report.completeness === 'complete' ? 'Data Lengkap' : 'Belum Lengkap'}
+                                <Badge
+                                    variant="outline"
+                                    className={cn('rounded-full px-3 py-1.5 font-medium', verificationStyles[report.verification] || verificationStyles.belum_terkonfirmasi)}
+                                >
+                                    {verificationLabels[report.verification] || report.verification}
                                 </Badge>
                             </div>
-                            <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                                {report.type}
-                            </h1>
-                            <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1.5">
-                                <Clock3 className="size-4 shrink-0" />
-                                Dilaporkan pada {report.date} (Kejadian: {report.incident_time})
-                            </p>
                         </div>
+                    </section>
 
-                        {mapsDirectionUrl && (
-                            <a
-                                href={mapsDirectionUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                            >
-                                <Navigation className="size-4" />
-                                Buka Rute di Google Maps
-                                <ExternalLink className="size-3.5 ml-0.5" />
-                            </a>
-                        )}
-                    </div>
-                </div>
+                    <Card className="gap-0 rounded-2xl border-border/70 bg-card py-0 shadow-sm">
+                        <CardHeader className="border-b border-border/70 px-5 py-4 md:px-6">
+                            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                <Send className="size-4 text-primary" aria-hidden="true" />
+                                Tindakan petugas
+                            </CardTitle>
+                            <CardDescription>
+                                Perubahan status akan dikirim sebagai pemberitahuan ke Telegram pelapor.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 p-5 md:p-6">
+                            <div className="space-y-2">
+                                <label htmlFor="notes" className="text-sm font-medium text-foreground">
+                                    Catatan untuk pelapor <span className="font-normal text-muted-foreground">(opsional)</span>
+                                </label>
+                                <input
+                                    id="notes"
+                                    type="text"
+                                    placeholder="Contoh: Petugas sudah tiba di lokasi."
+                                    value={customNotes}
+                                    onChange={(event) => setCustomNotes(event.target.value)}
+                                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                />
+                            </div>
 
-                {/* Action Card: Konfirmasi & Kirim Pesan Petugas */}
-                <Card className="rounded-xl border-2 border-primary/20 bg-primary/5 shadow-xs">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                            <Send className="size-4 text-primary" />
-                            Tindakan Petugas & Balasan Otomatis ke Telegram
-                        </CardTitle>
-                        <CardDescription>
-                            Konfirmasi status laporan di bawah ini. Sistem akan langsung mengirimkan pesan pemberitahuan resmi ke Telegram pelapor tanpa emoticon.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label
-                                htmlFor="notes"
-                                className="block text-xs font-medium text-muted-foreground mb-1.5"
-                            >
-                                Catatan Tambahan Petugas (Opsional - disertakan ke pesan Telegram):
-                            </label>
-                            <input
-                                id="notes"
-                                type="text"
-                                placeholder="Contoh: Unit Damkar Pos 01 sedang meluncur dengan 2 armada..."
-                                value={customNotes}
-                                onChange={(e) => setCustomNotes(e.target.value)}
-                                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                            />
-                        </div>
+                            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                                <Button
+                                    type="button"
+                                    onClick={() => handleUpdateStatus('dispatch')}
+                                    disabled={submittingAction !== null || (report.verification === 'terverifikasi' && report.status === 'menuju_lokasi')}
+                                    className="h-auto min-h-10 justify-start whitespace-normal rounded-xl px-3 py-2.5 text-left"
+                                >
+                                    <Truck className="size-4 shrink-0" aria-hidden="true" />
+                                    {submittingAction === 'dispatch' ? 'Memproses…' : 'Verifikasi & kirim petugas'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleUpdateStatus('complete')}
+                                    disabled={submittingAction !== null || report.status === 'selesai'}
+                                    className="h-auto min-h-10 justify-start whitespace-normal rounded-xl border-emerald-500/30 px-3 py-2.5 text-left text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+                                >
+                                    <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+                                    {submittingAction === 'complete' ? 'Memproses…' : 'Tandai selesai ditangani'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleUpdateStatus('invalid')}
+                                    disabled={submittingAction !== null || report.verification === 'tidak_valid'}
+                                    className="h-auto min-h-10 justify-start whitespace-normal rounded-xl border-destructive/30 px-3 py-2.5 text-left text-destructive hover:bg-destructive/10 sm:col-span-2 xl:col-span-1"
+                                >
+                                    <XCircle className="size-4 shrink-0" aria-hidden="true" />
+                                    {submittingAction === 'invalid' ? 'Memproses…' : 'Tandai tidak valid'}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                            {/* Tombol Utama: Verifikasi & Petugas Menuju Lokasi */}
-                            <Button
-                                type="button"
-                                onClick={() => handleUpdateStatus('dispatch')}
-                                disabled={submittingAction !== null || (report.verification === 'terverifikasi' && report.status === 'menuju_lokasi')}
-                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
-                            >
-                                <Truck className="size-4" />
-                                {submittingAction === 'dispatch'
-                                    ? 'Memproses...'
-                                    : 'Verifikasi & Kirim Petugas ke Lokasi'}
-                            </Button>
+                    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,21rem)] lg:gap-6">
+                        <div className="min-w-0 space-y-5 md:space-y-6">
+                            <Card className="gap-0 rounded-2xl border-border/70 bg-card py-0 shadow-sm">
+                                <CardHeader className="px-5 pt-5 md:px-6">
+                                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                        <FileText className="size-4 text-primary" aria-hidden="true" />
+                                        Informasi kejadian
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-5 p-5 pt-4 md:px-6 md:pb-6">
+                                    {report.summary && (
+                                        <div className="rounded-xl bg-muted/50 p-4">
+                                            <p className="mb-1 text-xs font-semibold text-muted-foreground">
+                                                Ringkasan
+                                            </p>
+                                            <p className="text-sm leading-6 text-foreground">
+                                                {report.summary}
+                                            </p>
+                                        </div>
+                                    )}
 
-                            {/* Tombol Selesai Ditangani */}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => handleUpdateStatus('complete')}
-                                disabled={submittingAction !== null || report.status === 'selesai'}
-                                className="inline-flex items-center gap-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
-                            >
-                                <CheckCircle2 className="size-4" />
-                                {submittingAction === 'complete'
-                                    ? 'Memproses...'
-                                    : 'Tandai Selesai Ditangani'}
-                            </Button>
-
-                            {/* Tombol Laporan Tidak Valid */}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => handleUpdateStatus('invalid')}
-                                disabled={submittingAction !== null || report.verification === 'tidak_valid'}
-                                className="inline-flex items-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 cursor-pointer"
-                            >
-                                <XCircle className="size-4" />
-                                {submittingAction === 'invalid'
-                                    ? 'Memproses...'
-                                    : 'Tandai Tidak Valid'}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 2-Column Main Content */}
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Left 2 Columns: Details, Description, Conversation, Histories */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Summary & Description Card */}
-                        <Card className="rounded-xl border-border shadow-none">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                    <ShieldAlert className="size-4 text-primary" />
-                                    Ringkasan & Keterangan Kejadian
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {report.summary && (
-                                    <div className="rounded-lg bg-muted/40 p-4 border border-border">
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                            Ringkasan Laporan
-                                        </p>
-                                        <p className="text-sm text-foreground leading-relaxed">
-                                            {report.summary}
+                                    <div className="space-y-2">
+                                        <h2 className="text-sm font-medium text-foreground">Kronologi</h2>
+                                        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
+                                            {report.description}
                                         </p>
                                     </div>
-                                )}
 
-                                <div>
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                        Kronologi / Deskripsi Lengkap
-                                    </p>
-                                    <div className="rounded-lg border border-border p-4 bg-background text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                                        {report.description}
+                                    <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+                                        <div className="rounded-xl bg-muted/40 p-3.5">
+                                            <p className="text-xs text-muted-foreground">Kondisi korban</p>
+                                            <p className="mt-1 text-sm font-medium text-foreground">
+                                                {report.victim_condition || 'Nihil / Tidak ada korban'}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl bg-muted/40 p-3.5">
+                                            <p className="text-xs text-muted-foreground">Jumlah korban</p>
+                                            <p className="mt-1 text-sm font-medium text-foreground">
+                                                {report.victim_count != null ? `${report.victim_count} orang` : 'Belum diketahui'}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
+                                </CardContent>
+                            </Card>
 
-                                {/* Information Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Kondisi Korban</p>
-                                        <p className="text-sm font-medium text-foreground mt-0.5">
-                                            {report.victim_condition || 'Nihil / Tidak ada korban'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Jumlah Korban Terdata</p>
-                                        <p className="text-sm font-medium text-foreground mt-0.5">
-                                            {report.victim_count !== null ? `${report.victim_count} orang` : 'Nihil / Belum diketahui'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Status History Timeline */}
-                        <Card className="rounded-xl border-border shadow-none">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                    <History className="size-4 text-primary" />
-                                    Riwayat Penanganan & Tindakan Petugas
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {report.histories && report.histories.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {report.histories.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className="rounded-lg border border-border p-3.5 bg-muted/20 text-sm"
-                                            >
-                                                <div className="flex items-center justify-between gap-2 mb-1 text-xs">
-                                                    <span className="font-semibold text-foreground">
-                                                        {item.admin_name}
+                            <Card className="gap-0 rounded-2xl border-border/70 bg-card py-0 shadow-sm">
+                                <CardHeader className="px-5 pt-5 md:px-6">
+                                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                        <History className="size-4 text-primary" aria-hidden="true" />
+                                        Riwayat penanganan
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Perubahan status dan verifikasi yang dilakukan petugas.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-5 pt-4 md:px-6 md:pb-6">
+                                    {report.histories.length > 0 ? (
+                                        <ol className="space-y-0">
+                                            {report.histories.map((item, index) => (
+                                                <li key={item.id} className="relative flex gap-3 pb-5 last:pb-0">
+                                                    {index < report.histories.length - 1 && (
+                                                        <span className="absolute top-8 bottom-0 left-3.75 w-px bg-border" aria-hidden="true" />
+                                                    )}
+                                                    <span className="relative z-10 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                                        <Clock3 className="size-3.5" aria-hidden="true" />
                                                     </span>
-                                                    <span className="text-muted-foreground">{item.created_at}</span>
+                                                    <div className="min-w-0 flex-1 space-y-2">
+                                                        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                                                            <p className="text-sm font-medium text-foreground">{item.admin_name}</p>
+                                                            <time className="text-xs text-muted-foreground">{item.created_at}</time>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <Badge variant="outline" className="rounded-full font-normal">
+                                                                {statusLabels[item.new_status] || item.new_status}
+                                                            </Badge>
+                                                            {item.new_verification_status && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={cn(
+                                                                        'rounded-full font-normal',
+                                                                        verificationStyles[item.new_verification_status] || verificationStyles.belum_terkonfirmasi,
+                                                                    )}
+                                                                >
+                                                                    {verificationLabels[item.new_verification_status] || item.new_verification_status}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {item.notes && (
+                                                            <p className="break-words text-sm leading-5 text-muted-foreground">
+                                                                {item.notes}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    ) : (
+                                        <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">
+                                            Belum ada perubahan status yang dicatat.
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card className="rounded-2xl border-border/70 bg-card py-0 shadow-sm">
+                                <CardContent className="p-5 md:p-6">
+                                    <details className="group">
+                                        <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                <MessageSquare className="size-4" aria-hidden="true" />
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block text-sm font-semibold text-foreground">Riwayat pesan Telegram</span>
+                                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                                    {report.messages.length} pesan tersimpan · buka untuk melihat percakapan
+                                                </span>
+                                            </span>
+                                            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+                                        </summary>
+                                        <div className="mt-5 space-y-3 border-t border-border pt-4">
+                                            {report.messages.length > 0 ? report.messages.map((message) => (
+                                                <div
+                                                    key={message.id}
+                                                    className={cn(
+                                                        'max-w-full rounded-xl border p-3 text-sm sm:max-w-[85%]',
+                                                        message.direction === 'inbound'
+                                                            ? 'border-border bg-muted/40 sm:mr-auto'
+                                                            : 'border-primary/20 bg-primary/5 sm:ml-auto',
+                                                    )}
+                                                >
+                                                    <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+                                                        <span className="font-semibold text-foreground">
+                                                            {message.direction === 'inbound' ? report.reporter.name : 'Bot SIRINE'}
+                                                        </span>
+                                                        <time className="text-muted-foreground">{message.time}</time>
+                                                    </div>
+                                                    <p className="break-words whitespace-pre-wrap leading-5 text-muted-foreground">
+                                                        {message.body}
+                                                    </p>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                                                    <span>Status:</span>
-                                                    <Badge variant="outline" className="text-xs font-normal">
-                                                        {statusLabels[item.new_status] || item.new_status}
-                                                    </Badge>
-                                                </div>
-                                                <p className="text-foreground text-xs leading-relaxed">
-                                                    {item.notes}
+                                            )) : (
+                                                <p className="text-sm text-muted-foreground">
+                                                    Belum ada riwayat pesan tersimpan untuk laporan ini.
                                                 </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        Belum ada perubahan status yang dicatat.
+                                            )}
+                                        </div>
+                                    </details>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <aside className="min-w-0 space-y-5 md:space-y-6">
+                            <Card className="gap-0 overflow-hidden rounded-2xl border-border/70 bg-card py-0 shadow-sm">
+                                <CardHeader className="px-5 pt-5 md:px-6">
+                                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                        <MapPin className="size-4 text-primary" aria-hidden="true" />
+                                        Lokasi kejadian
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 p-5 pt-3 md:px-6 md:pb-6">
+                                    <p className="break-words text-sm leading-5 text-foreground">
+                                        {report.location}
                                     </p>
-                                )}
-                            </CardContent>
-                        </Card>
 
-                        {/* Telegram Conversation History */}
-                        <Card className="rounded-xl border-border shadow-none">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                    <MessageSquare className="size-4 text-primary" />
-                                    Riwayat Interaksi Telegram
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {report.messages && report.messages.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {report.messages.map((msg) => (
-                                            <div
-                                                key={msg.id}
-                                                className={cn(
-                                                    'p-3.5 rounded-lg border text-sm max-w-[85%]',
-                                                    msg.direction === 'inbound'
-                                                        ? 'bg-muted/30 border-border mr-auto'
-                                                        : 'bg-primary/5 border-primary/20 ml-auto',
-                                                )}
-                                            >
-                                                <div className="flex items-center justify-between gap-4 mb-1 text-xs">
-                                                    <span className="font-semibold text-foreground">
-                                                        {msg.direction === 'inbound' ? report.reporter.name : 'Bot SIRINE'}
-                                                    </span>
-                                                    <span className="text-muted-foreground">{msg.time}</span>
-                                                </div>
-                                                <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                                                    {msg.body}
-                                                </p>
+                                    {report.latitude !== null && report.longitude !== null ? (
+                                        <>
+                                            <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                                                <iframe
+                                                    title={`Peta lokasi ${report.code}`}
+                                                    className="h-52 w-full border-0 sm:h-60"
+                                                    loading="lazy"
+                                                    src={`https://maps.google.com/maps?q=${report.latitude},${report.longitude}&hl=id&z=15&output=embed`}
+                                                />
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        Belum ada riwayat pesan tersimpan untuk laporan ini.
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right 1 Column: Location, Map, Reporter */}
-                    <div className="space-y-6">
-                        {/* Map & Location Card */}
-                        <Card className="rounded-xl border-border shadow-none overflow-hidden">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                    <MapPin className="size-4 text-primary" />
-                                    Lokasi & Navigasi Petugas
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-1">
-                                    <p className="text-xs text-muted-foreground">Patokan / Alamat Tempat</p>
-                                    <p className="text-sm font-medium text-foreground">{report.location}</p>
-                                </div>
-
-                                {report.latitude && report.longitude ? (
-                                    <>
-                                        <div className="rounded-lg bg-muted/40 p-3 border border-border text-xs space-y-1">
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Sumber Lokasi:</span>
-                                                <span className="font-medium text-foreground uppercase">
-                                                    {report.location_source}
+                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                                                <span>Sumber: {report.location_source}</span>
+                                                <span className="font-mono">
+                                                    {report.latitude}, {report.longitude}
                                                 </span>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Latitude:</span>
-                                                <span className="font-mono text-foreground">{report.latitude}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Longitude:</span>
-                                                <span className="font-mono text-foreground">{report.longitude}</span>
-                                            </div>
-                                        </div>
+                                            {mapsDirectionUrl && (
+                                                <a
+                                                    href={mapsDirectionUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                >
+                                                    <Navigation className="size-4" aria-hidden="true" />
+                                                    Buka petunjuk rute
+                                                    <ExternalLink className="size-3.5" aria-hidden="true" />
+                                                </a>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                                            Titik koordinat GPS tidak tersedia.
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                                        {/* Embedded Google Maps */}
-                                        <div className="overflow-hidden rounded-lg border border-border h-64 w-full bg-muted/20">
-                                            <iframe
-                                                title={`Peta Lokasi ${report.code}`}
-                                                width="100%"
-                                                height="100%"
-                                                style={{ border: 0 }}
-                                                loading="lazy"
-                                                src={`https://maps.google.com/maps?q=${report.latitude},${report.longitude}&hl=id&z=15&output=embed`}
-                                            />
-                                        </div>
-
-                                        {mapsDirectionUrl && (
-                                            <a
-                                                href={mapsDirectionUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                                            >
-                                                <Navigation className="size-4" />
-                                                Petunjuk Rute Google Maps
-                                                <ExternalLink className="size-3.5 ml-0.5" />
-                                            </a>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-                                        Titik koordinat GPS tidak disertakan pada laporan ini.
+                            <Card className="gap-0 rounded-2xl border-border/70 bg-card py-0 shadow-sm">
+                                <CardHeader className="px-5 pt-5 md:px-6">
+                                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                        <User className="size-4 text-primary" aria-hidden="true" />
+                                        Pelapor
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3 p-5 pt-3 md:px-6 md:pb-6">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Nama</p>
+                                        <p className="mt-1 text-sm font-medium text-foreground">
+                                            {report.reporter.name}
+                                        </p>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Reporter Information Card */}
-                        <Card className="rounded-xl border-border shadow-none">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                                    <User className="size-4 text-primary" />
-                                    Informasi Pelapor
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3 text-sm">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Nama Pelapor</p>
-                                    <p className="font-medium text-foreground mt-0.5">{report.reporter.name}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">WhatsApp / ID Telegram</p>
-                                    <p className="font-medium text-foreground mt-0.5 flex items-center gap-1.5">
-                                        <Phone className="size-3.5 text-muted-foreground" />
-                                        {report.reporter.phone}
-                                    </p>
-                                </div>
-                                <div className="pt-2 border-t border-border">
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <ShieldCheck className="size-4 text-primary" />
-                                        <span>Terverifikasi melalui akun Telegram aktif</span>
+                                    <div className="border-t border-border pt-3">
+                                        <p className="text-xs text-muted-foreground">Nomor kontak Telegram</p>
+                                        <p className="mt-1 flex items-start gap-2 break-all text-sm font-medium text-foreground">
+                                            <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                            {report.reporter.phone}
+                                        </p>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        </aside>
                     </div>
-                </div>
+                </main>
             </div>
         </>
     );

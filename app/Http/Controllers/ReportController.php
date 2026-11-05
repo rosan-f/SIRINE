@@ -120,6 +120,8 @@ class ReportController extends Controller
                 'admin_name' => $history->admin?->name ?? 'Sistem / Petugas',
                 'previous_status' => $history->previous_status,
                 'new_status' => $history->new_status,
+                'previous_verification_status' => $history->previous_verification_status,
+                'new_verification_status' => $history->new_verification_status,
                 'notes' => $history->notes,
                 'created_at' => $history->created_at ? $history->created_at->format('d M Y, H.i') : '-',
             ]),
