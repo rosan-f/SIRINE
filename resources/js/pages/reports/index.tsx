@@ -8,6 +8,7 @@ import {
     Navigation,
     RotateCcw,
     Search,
+    ShieldAlert,
     ShieldCheck,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -23,16 +24,14 @@ import { index as reports } from '@/routes/reports';
 
 type ReportStatus =
     | 'baru_diterima'
-    | 'menunggu_informasi'
-    | 'siap_ditinjau'
-    | 'dalam_pemeriksaan'
-    | string;
+    | 'menuju_lokasi'
+    | 'dalam_penanganan'
+    | 'selesai';
 
 type VerificationStatus =
     | 'belum_terkonfirmasi'
     | 'terverifikasi'
-    | 'tidak_valid'
-    | string;
+    | 'tidak_valid';
 
 export type Report = {
     id: number;
@@ -58,20 +57,20 @@ export type Report = {
 
 const statusLabels: Record<string, string> = {
     baru_diterima: 'Baru diterima',
-    menunggu_informasi: 'Menunggu informasi',
-    siap_ditinjau: 'Siap ditinjau',
-    dalam_pemeriksaan: 'Dalam pemeriksaan',
+    menuju_lokasi: 'Petugas menuju lokasi',
+    dalam_penanganan: 'Dalam penanganan',
+    selesai: 'Selesai ditangani',
 };
 
 const statusStyles: Record<string, string> = {
     baru_diterima: 'bg-muted text-muted-foreground border-border',
-    menunggu_informasi: 'bg-muted text-muted-foreground border-border',
-    siap_ditinjau: 'bg-accent text-accent-foreground border-border',
-    dalam_pemeriksaan: 'bg-secondary text-secondary-foreground border-border',
+    menuju_lokasi: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    dalam_penanganan: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    selesai: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
 };
 
 const verificationLabels: Record<string, string> = {
-    belum_terkonfirmasi: 'Belum dikonfirmasi',
+    belum_terkonfirmasi: 'Belum diverifikasi',
     terverifikasi: 'Terverifikasi',
     tidak_valid: 'Tidak valid',
 };
@@ -115,25 +114,34 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
         {
             label: 'Total laporan',
             value: reports.length,
+            description: 'Semua laporan tersimpan',
             icon: ClipboardList,
         },
         {
-            label: 'Baru diterima',
-            value: reports.filter((r) => r.status === 'baru_diterima').length,
+            label: 'Belum diverifikasi',
+            value: reports.filter((report) => report.verification === 'belum_terkonfirmasi').length,
+            description: 'Menunggu peninjauan petugas',
             icon: Inbox,
         },
         {
-            label: 'Menunggu informasi',
-            value: reports.filter((r) => r.status === 'menunggu_informasi').length,
+            label: 'Sedang ditangani',
+            value: reports.filter((report) => ['menuju_lokasi', 'dalam_penanganan'].includes(report.status)).length,
+            description: 'Menuju lokasi atau ditangani',
             icon: Clock3,
         },
         {
-            label: 'Siap ditinjau',
-            value: reports.filter((r) => r.status === 'siap_ditinjau').length,
+            label: 'Selesai ditangani',
+            value: reports.filter((report) => report.status === 'selesai' && report.verification !== 'tidak_valid').length,
+            description: 'Laporan tidak valid dihitung terpisah',
             icon: ShieldCheck,
         },
+        {
+            label: 'Tidak valid',
+            value: reports.filter((report) => report.verification === 'tidak_valid').length,
+            description: 'Tidak dihitung sebagai selesai ditangani',
+            icon: ShieldAlert,
+        },
     ];
-
     const resetFilters = () => {
         setSearch('');
         setStatusFilter('semua');
@@ -156,7 +164,7 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     {stats.map((stat) => (
                         <Card
                             key={stat.label}
@@ -171,6 +179,9 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                                         <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                                             {stat.value}
                                         </p>
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {stat.description}
+                                        </p>
                                     </div>
 
                                     <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -181,6 +192,10 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                         </Card>
                     ))}
                 </div>
+
+                <p className="text-xs text-muted-foreground">
+                    Ringkasan di atas mencakup semua laporan; filter pencarian hanya memengaruhi tabel di bawah.
+                </p>
 
                 {/* Report Table Card */}
                 <Card className="gap-0 overflow-hidden rounded-xl border-border py-0 shadow-none">
@@ -199,7 +214,7 @@ export default function ReportsIndex({ reports = [] }: ReportsIndexProps) {
                                 variant="outline"
                                 className="rounded-full font-normal text-muted-foreground"
                             >
-                                {reports.length} Laporan Tersimpan
+                                {filteredReports.length} dari {reports.length} laporan ditampilkan
                             </Badge>
                         </div>
 

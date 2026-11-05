@@ -16,21 +16,35 @@ class DashboardController extends Controller
     public function index(): Response
     {
         $totalReports = Report::count();
-        $baruDiterima = Report::where('report_status', 'baru_diterima')->count();
-        $sedangDitangani = Report::whereIn('report_status', ['menuju_lokasi', 'dalam_penanganan'])->count();
-        $selesai = Report::where('report_status', 'selesai')->count();
-        $terverifikasi = Report::where('verification_status', 'terverifikasi')->count();
+        $sedangDitangani = Report::whereIn('report_status', ['menuju_lokasi', 'dalam_penanganan'])
+            ->where(function ($query) {
+                $query->whereNull('verification_status')
+                    ->orWhere('verification_status', '!=', 'tidak_valid');
+            })
+            ->count();
+        $selesai = Report::where('report_status', 'selesai')
+            ->where(function ($query) {
+                $query->whereNull('verification_status')
+                    ->orWhere('verification_status', '!=', 'tidak_valid');
+            })
+            ->count();
+        $belumDiverifikasi = Report::where('verification_status', 'belum_terkonfirmasi')->count();
+        $tidakValid = Report::where('verification_status', 'tidak_valid')->count();
 
         $statuses = [
             'baru_diterima' => ['label' => 'Baru diterima', 'color' => 'bg-neutral-500'],
             'menuju_lokasi' => ['label' => 'Petugas Menuju Lokasi', 'color' => 'bg-blue-500'],
             'dalam_penanganan' => ['label' => 'Dalam Penanganan', 'color' => 'bg-amber-500'],
-            'selesai' => ['label' => 'Selesai Ditangani', 'color' => 'bg-emerald-500'],
         ];
 
         $statusSummary = [];
         foreach ($statuses as $statusKey => $meta) {
-            $count = Report::where('report_status', $statusKey)->count();
+            $count = Report::where('report_status', $statusKey)
+                ->where(function ($query) {
+                    $query->whereNull('verification_status')
+                        ->orWhere('verification_status', '!=', 'tidak_valid');
+                })
+                ->count();
             $percent = $totalReports > 0 ? (int) round(($count / $totalReports) * 100) : 0;
             $statusSummary[] = [
                 'label' => $meta['label'],
@@ -39,6 +53,19 @@ class DashboardController extends Controller
                 'bar' => $meta['color'],
             ];
         }
+
+        $statusSummary[] = [
+            'label' => 'Selesai ditangani',
+            'value' => $selesai,
+            'percent' => $totalReports > 0 ? (int) round(($selesai / $totalReports) * 100) : 0,
+            'bar' => 'bg-emerald-500',
+        ];
+        $statusSummary[] = [
+            'label' => 'Laporan tidak valid',
+            'value' => $tidakValid,
+            'percent' => $totalReports > 0 ? (int) round(($tidakValid / $totalReports) * 100) : 0,
+            'bar' => 'bg-rose-500',
+        ];
 
         $recentReports = Report::with('reporter')
             ->latest()
@@ -62,10 +89,10 @@ class DashboardController extends Controller
         return Inertia::render('dashboard', [
             'stats' => [
                 'total' => $totalReports,
-                'baru_diterima' => $baruDiterima,
+                'belum_diverifikasi' => $belumDiverifikasi,
                 'sedang_ditangani' => $sedangDitangani,
-                'selesai' => $selesai,
-                'terverifikasi' => $terverifikasi,
+                'selesai_ditangani' => $selesai,
+                'tidak_valid' => $tidakValid,
             ],
             'statusSummary' => $statusSummary,
             'recentReports' => $recentReports,

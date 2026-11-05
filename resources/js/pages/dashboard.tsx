@@ -1,15 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    Activity,
     CheckCircle2,
     ClipboardList,
-    Clock3,
     ExternalLink,
     Inbox,
     MapPin,
     Play,
     RefreshCw,
-    ShieldCheck,
     Square,
     Terminal,
     Truck,
@@ -31,13 +28,9 @@ import { index as reportsIndex } from '@/routes/reports';
 
 type ReportStatus =
     | 'baru_diterima'
-    | 'menunggu_informasi'
-    | 'siap_ditinjau'
-    | 'dalam_pemeriksaan'
     | 'menuju_lokasi'
     | 'dalam_penanganan'
-    | 'selesai'
-    | string;
+    | 'selesai';
 
 type RecentReport = {
     id: number;
@@ -59,10 +52,10 @@ type StatusSummaryItem = {
 interface DashboardProps {
     stats: {
         total: number;
-        baru_diterima: number;
+        belum_diverifikasi: number;
         sedang_ditangani: number;
-        selesai: number;
-        terverifikasi: number;
+        selesai_ditangani: number;
+        tidak_valid: number;
     };
     statusSummary: StatusSummaryItem[];
     recentReports: RecentReport[];
@@ -75,9 +68,6 @@ interface DashboardProps {
 
 const statusLabels: Record<string, string> = {
     baru_diterima: 'Baru diterima',
-    menunggu_informasi: 'Menunggu informasi',
-    siap_ditinjau: 'Siap ditinjau',
-    dalam_pemeriksaan: 'Dalam pemeriksaan',
     menuju_lokasi: 'Petugas Menuju Lokasi',
     dalam_penanganan: 'Dalam Penanganan',
     selesai: 'Selesai Ditangani',
@@ -85,9 +75,6 @@ const statusLabels: Record<string, string> = {
 
 const statusStyles: Record<string, string> = {
     baru_diterima: 'bg-muted text-muted-foreground border-border',
-    menunggu_informasi: 'bg-muted text-muted-foreground border-border',
-    siap_ditinjau: 'bg-accent text-accent-foreground border-border',
-    dalam_pemeriksaan: 'bg-secondary text-secondary-foreground border-border',
     menuju_lokasi: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
     dalam_penanganan: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
     selesai: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
@@ -126,7 +113,7 @@ export default function Dashboard({
                         setLogs(data.logs);
                     }
                 }
-            } catch (err) {
+            } catch {
                 // Abaikan kesalahan koneksi berkala
             }
         }, 4000);
@@ -179,13 +166,13 @@ export default function Dashboard({
         {
             label: 'Total Laporan',
             value: stats.total,
-            hint: `${stats.terverifikasi} telah diverifikasi`,
+            hint: `${stats.belum_diverifikasi} belum diverifikasi · semua periode`,
             icon: ClipboardList,
             style: 'text-primary',
         },
         {
-            label: 'Baru Diterima',
-            value: stats.baru_diterima,
+            label: 'Belum Diverifikasi',
+            value: stats.belum_diverifikasi,
             hint: 'Menunggu peninjauan petugas',
             icon: Inbox,
             style: 'text-muted-foreground',
@@ -193,14 +180,14 @@ export default function Dashboard({
         {
             label: 'Sedang Ditangani',
             value: stats.sedang_ditangani,
-            hint: 'Petugas aktif di lapangan',
+            hint: 'Dalam perjalanan atau menangani kejadian',
             icon: Truck,
             style: 'text-blue-500',
         },
         {
             label: 'Selesai Ditangani',
-            value: stats.selesai,
-            hint: 'Penanganan tuntas',
+            value: stats.selesai_ditangani,
+            hint: `${stats.tidak_valid} laporan tidak valid dihitung terpisah`,
             icon: CheckCircle2,
             style: 'text-emerald-500',
         },
@@ -343,15 +330,19 @@ export default function Dashboard({
                         <Card className="rounded-xl border-border shadow-none">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base font-semibold text-foreground">
-                                    Distribusi Status Penanganan
+                                    Status Laporan
                                 </CardTitle>
                                 <CardDescription>
-                                    Persentase status penanganan seluruh laporan masuk.
+                                    Persentase dari semua laporan. Laporan tidak valid dipisahkan dari laporan selesai ditangani.
                                 </CardDescription>
                             </CardHeader>
 
                             <CardContent className="space-y-4">
-                                {statusSummary.map((item) => (
+                                {stats.total === 0 ? (
+                                    <p className="py-4 text-sm text-muted-foreground">
+                                        Belum ada laporan untuk ditampilkan.
+                                    </p>
+                                ) : statusSummary.map((item) => (
                                     <div key={item.label} className="space-y-1.5">
                                         <div className="flex items-center justify-between text-xs">
                                             <span className="font-medium text-foreground">
