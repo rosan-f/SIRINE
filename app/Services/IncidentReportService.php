@@ -62,24 +62,66 @@ class IncidentReportService
 
                 Conversation::where('reporter_id', $reporter->id)
                     ->where('conversation_status', 'active')
-                    ->update(['conversation_status' => 'completed']);
+                    ->update([
+                        'conversation_status' => 'completed',
+                        'current_question' => null,
+                        'report_draft' => null,
+                    ]);
 
                 $welcome = "Selamat datang di Layanan Pelaporan Darurat SIRINE.\n\n"
-                    ."Silakan ikuti 2 langkah berikut untuk mengirimkan laporan:\n\n"
-                    ."Langkah 1:\n"
+                    ."Saya akan memandu Anda sampai laporan siap dikirim.\n\n"
+                    ."Langkah 1 dari 3:\n"
                     ."Kirimkan lokasi kejadian Anda saat ini melalui fitur Kirim Lokasi (Share Location) di Telegram.\n\n"
-                    ."Langkah 2:\n"
-                    .'Setelah lokasi diterima, sistem akan memberikan template format laporan untuk Anda lengkapi.';
+                    ."Langkah 2 dari 3:\n"
+                    ."Ceritakan kejadian melalui teks atau voice note.\n\n"
+                    ."Langkah 3 dari 3:\n"
+                    .'Periksa pratinjau laporan, lalu konfirmasi atau koreksi sebelum dikirim ke petugas.';
 
-                $this->telegramService->sendMessage($chatId, $welcome);
+                $this->telegramService->sendMessage($chatId, $welcome, null, 'HTML', $this->locationKeyboard());
 
                 return null;
+            }
+
+            $controlAction = mb_strtolower(trim($textToProcess));
+            if (in_array($controlAction, ['batalkan', '✖️ batalkan', '/cancel'], true)) {
+                $this->cancelActiveConversation($chatId);
+
+                return null;
+            }
+
+            if (in_array($controlAction, ['konfirmasi laporan', '✅ konfirmasi laporan', 'koreksi', '✏️ koreksi'], true)) {
+                $reporter = Reporter::where('whatsapp_number', $chatId)->first();
+                $conversation = $reporter
+                    ? Conversation::where('reporter_id', $reporter->id)
+                        ->where('conversation_status', 'active')
+                        ->latest('last_message_at')
+                        ->first()
+                    : null;
+
+                $expireMinutes = (int) env('CONVERSATION_EXPIRE_MINUTES', 60);
+                $conversationExpired = $conversation?->last_message_at
+                    && $conversation->last_message_at->diffInMinutes(now()) > $expireMinutes;
+
+                if (! $conversation || $conversationExpired || $conversation->current_question !== 'awaiting_confirmation') {
+                    $this->telegramService->sendMessage(
+                        $chatId,
+                        'Belum ada pratinjau laporan yang menunggu konfirmasi. Ketik /start untuk memulai laporan baru.'
+                    );
+
+                    return null;
+                }
             }
         } elseif (isset($message['voice']) || isset($message['audio'])) {
             $messageType = 'audio';
             $inputType = 'voice';
             $audioInfo = $message['voice'] ?? $message['audio'];
             $fileId = $audioInfo['file_id'] ?? null;
+
+            $this->telegramService->sendMessage(
+                $chatId,
+                'Voice note diterima. Saya sedang mengubahnya menjadi teks…',
+                (int) $messageId
+            );
 
             $telegramFile = $fileId ? $this->telegramService->getFile($fileId) : null;
             if ($telegramFile && isset($telegramFile['file_path'])) {
@@ -94,7 +136,6 @@ class IncidentReportService
 
                     if ($textToProcess !== '') {
                         $savedAudioPath = "private/audio/{$fileName}";
-                        Storage::disk('local')->put($savedAudioPath, $binary);
                     }
                 }
             }
@@ -128,7 +169,14 @@ class IncidentReportService
             return null;
         }
 
-        if (in_array($messageType, ['text', 'audio'], true) && ! $this->geminiService->isPotentialEmergencyReport($textToProcess)) {
+        $normalizedText = mb_strtolower(trim($textToProcess));
+        $isConversationControl = in_array($normalizedText, [
+            'konfirmasi laporan', '✅ konfirmasi laporan', 'koreksi', '✏️ koreksi',
+        ], true);
+
+        if (in_array($messageType, ['text', 'audio'], true)
+            && ! $isConversationControl
+            && ! $this->geminiService->isPotentialEmergencyReport($textToProcess)) {
             $this->telegramService->sendMessage(
                 $chatId,
                 'Pesan ini belum terlihat seperti laporan keadaan darurat. Bot SIRINE hanya menerima laporan seperti kebakaran, kecelakaan, banjir, pohon tumbang, atau keadaan medis darurat. Silakan kirim keterangan kejadian dan lokasi.',
@@ -136,6 +184,10 @@ class IncidentReportService
             );
 
             return null;
+        }
+
+        if ($messageType === 'audio' && $savedAudioPath !== null && isset($binary)) {
+            Storage::disk('local')->put($savedAudioPath, $binary);
         }
 
         return DB::transaction(function () use (
@@ -146,6 +198,7 @@ class IncidentReportService
             $messageType,
             $inputType,
             $textToProcess,
+            $normalizedText,
             $savedAudioPath,
             $transcript,
             $latitude,
@@ -195,6 +248,70 @@ class IncidentReportService
                 'created_at' => now(),
             ]);
 
+            if ($conversation->current_question === 'awaiting_confirmation' && in_array($normalizedText, ['koreksi', '✏️ koreksi'], true)) {
+                $conversation->update([
+                    'current_question' => 'awaiting_template',
+                    'report_draft' => null,
+                    'last_message_at' => now(),
+                ]);
+                $inboundMsg->update(['process_status' => 'processed']);
+
+                $correctionPrompt = "Silakan kirim ulang keterangan kejadian yang benar.\n\n"
+                    ."Gunakan format ini atau kirim voice note:\n"
+                    ."Jenis Kejadian: \n"
+                    ."Patokan/Alamat: \n"
+                    ."Keterangan: \n"
+                    .'Kondisi Korban: ';
+                $this->telegramService->sendMessage($chatId, $correctionPrompt, (int) $messageId, 'HTML', $this->cancelKeyboard());
+                $this->recordBotMessage($conversation, $correctionPrompt);
+
+                return null;
+            }
+
+            if ($conversation->current_question === 'awaiting_confirmation' && in_array($normalizedText, ['konfirmasi laporan', '✅ konfirmasi laporan'], true)) {
+                $inboundMsg->update(['process_status' => 'processed']);
+                $previousTextMsg = Message::where('conversation_id', $conversation->id)
+                    ->whereIn('message_type', ['text', 'audio'])
+                    ->where('direction', 'inbound')
+                    ->where('id', '!=', $inboundMsg->id)
+                    ->latest('id')
+                    ->first();
+                $locationMsg = Message::where('conversation_id', $conversation->id)
+                    ->where('message_type', 'location')
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->latest('id')
+                    ->first();
+
+                $draft = $conversation->report_draft;
+                if (is_array($draft)) {
+                    return $this->finalizeReport(
+                        $reporter,
+                        $conversation,
+                        (string) $draft['text_data'],
+                        (string) $draft['input_type'],
+                        (float) $draft['latitude'],
+                        (float) $draft['longitude'],
+                        $chatId,
+                        $senderName,
+                        $draft['analysis']
+                    );
+                }
+
+                if ($previousTextMsg && $locationMsg) {
+                    return $this->finalizeReport(
+                        $reporter,
+                        $conversation,
+                        (string) $previousTextMsg->body,
+                        $previousTextMsg->message_type === 'audio' ? 'voice' : 'text',
+                        (float) $locationMsg->latitude,
+                        (float) $locationMsg->longitude,
+                        $chatId,
+                        $senderName
+                    );
+                }
+            }
+
             if ($messageType === 'location') {
                 $inboundMsg->update(['process_status' => 'processed']);
 
@@ -206,15 +323,14 @@ class IncidentReportService
                     ->first();
 
                 if ($previousTextMsg && ! empty($previousTextMsg->body)) {
-                    return $this->finalizeReport(
-                        $reporter,
+                    return $this->sendReportPreview(
                         $conversation,
                         $previousTextMsg->body,
                         $previousTextMsg->message_type === 'audio' ? 'voice' : 'text',
                         $latitude,
                         $longitude,
                         $chatId,
-                        $senderName
+                        (int) $messageId
                     );
                 }
 
@@ -225,7 +341,7 @@ class IncidentReportService
 
                 $templateMsg = "Lokasi kejadian berhasil diterima.\n"
                     ."Koordinat: {$latitude}, {$longitude}\n\n"
-                    ."Langkah 2: Silakan salin dan lengkapi format laporan di bawah ini, lalu kirim kembali:\n\n"
+                    ."Langkah 2 dari 3: Ceritakan kejadian dengan format berikut, atau kirim voice note:\n\n"
                     ."[FORMAT LAPORAN SIRINE]\n"
                     ."Jenis Kejadian: \n"
                     ."Patokan/Alamat: \n"
@@ -233,7 +349,7 @@ class IncidentReportService
                     ."Kondisi Korban: \n\n"
                     .'Catatan: Anda juga dapat mengirimkan rekaman suara (voice note) yang menjelaskan poin-poin di atas.';
 
-                $this->telegramService->sendMessage($chatId, $templateMsg, (int) $messageId);
+                $this->telegramService->sendMessage($chatId, $templateMsg, (int) $messageId, 'HTML', $this->cancelKeyboard());
 
                 Message::create([
                     'conversation_id' => $conversation->id,
@@ -264,9 +380,9 @@ class IncidentReportService
 
                 $shortExcerpt = Str::limit($textToProcess, 80);
                 $askLocMsg = "Keterangan kejadian Anda telah kami catat: \"{$shortExcerpt}\"\n\n"
-                    .'Langkah 1: Silakan kirimkan Lokasi Kejadian saat ini via fitur Kirim Lokasi (Share Location) Telegram agar petugas dapat memperoleh koordinat dan rute navigasi yang presisi.';
+                    .'Lokasi belum diterima. Kirim lokasi kejadian melalui tombol Kirim Lokasi agar petugas dapat menemukan titik yang tepat.';
 
-                $this->telegramService->sendMessage($chatId, $askLocMsg, (int) $messageId);
+                $this->telegramService->sendMessage($chatId, $askLocMsg, (int) $messageId, 'HTML', $this->locationKeyboard());
 
                 Message::create([
                     'conversation_id' => $conversation->id,
@@ -282,17 +398,134 @@ class IncidentReportService
                 return null;
             }
 
-            return $this->finalizeReport(
-                $reporter,
+            return $this->sendReportPreview(
                 $conversation,
                 $textToProcess,
                 $inputType,
                 (float) $locationMsg->latitude,
                 (float) $locationMsg->longitude,
                 $chatId,
-                $senderName
+                (int) $messageId
             );
         });
+    }
+
+    protected function sendReportPreview(
+        Conversation $conversation,
+        string $textData,
+        string $inputType,
+        float $latitude,
+        float $longitude,
+        string $chatId,
+        int $messageId
+    ): null {
+        $analysis = $this->geminiService->extractReport($textData);
+        $escape = fn (?string $value): string => htmlspecialchars($value ?? '-', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        $preview = "<b>Langkah 3 dari 3: Periksa laporan Anda</b>\n\n"
+            .'<b>Jenis kejadian:</b> '.$escape($analysis['incident_type'] ?? null)."\n"
+            .'<b>Lokasi:</b> '.$escape($analysis['location_description'] ?? null)."\n"
+            .'<b>Koordinat:</b> '.number_format($latitude, 6, '.', '').', '.number_format($longitude, 6, '.', '')."\n"
+            .'<b>Keterangan:</b> '.$escape($analysis['description'] ?? $textData)."\n"
+            .'<b>Kondisi korban:</b> '.$escape($analysis['victim_condition'] ?? null)."\n\n"
+            .'Pilih Konfirmasi Laporan untuk mengirim ke petugas, atau Koreksi untuk mengubah keterangan.';
+
+        $conversation->update([
+            'current_question' => 'awaiting_confirmation',
+            'report_draft' => [
+                'text_data' => $textData,
+                'input_type' => $inputType,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'analysis' => $analysis,
+            ],
+            'last_message_at' => now(),
+        ]);
+
+        $this->telegramService->sendMessage($chatId, $preview, $messageId, 'HTML', [
+            'keyboard' => [
+                [['text' => '✅ Konfirmasi Laporan']],
+                [['text' => '✏️ Koreksi'], ['text' => '✖️ Batalkan']],
+            ],
+            'resize_keyboard' => true,
+            'one_time_keyboard' => false,
+        ]);
+        $this->recordBotMessage($conversation, strip_tags($preview));
+
+        return null;
+    }
+
+    protected function cancelActiveConversation(string $chatId): void
+    {
+        $reporter = Reporter::where('whatsapp_number', $chatId)->first();
+        $conversation = $reporter
+            ? Conversation::where('reporter_id', $reporter->id)
+                ->where('conversation_status', 'active')
+                ->latest('last_message_at')
+                ->first()
+            : null;
+
+        if ($conversation) {
+            $conversation->update([
+                'conversation_status' => 'completed',
+                'current_question' => null,
+                'report_draft' => null,
+                'last_message_at' => now(),
+            ]);
+            Message::where('conversation_id', $conversation->id)
+                ->where('direction', 'inbound')
+                ->where('process_status', 'pending')
+                ->update(['process_status' => 'cancelled']);
+
+            $this->telegramService->sendMessage(
+                $chatId,
+                'Laporan dibatalkan. Jika ingin melapor lagi, ketik /start.',
+                null,
+                'HTML',
+                ['remove_keyboard' => true]
+            );
+            $this->recordBotMessage($conversation, 'Laporan dibatalkan. Jika ingin melapor lagi, ketik /start.');
+
+            return;
+        }
+
+        $this->telegramService->sendMessage($chatId, 'Tidak ada laporan yang sedang berjalan. Ketik /start untuk memulai.');
+    }
+
+    protected function locationKeyboard(): array
+    {
+        return [
+            'keyboard' => [
+                [['text' => '📍 Kirim Lokasi', 'request_location' => true]],
+                [['text' => '✖️ Batalkan']],
+            ],
+            'resize_keyboard' => true,
+            'one_time_keyboard' => false,
+            'input_field_placeholder' => 'Pilih Kirim Lokasi untuk melanjutkan',
+        ];
+    }
+
+    protected function cancelKeyboard(): array
+    {
+        return [
+            'keyboard' => [[['text' => '✖️ Batalkan']]],
+            'resize_keyboard' => true,
+            'one_time_keyboard' => false,
+        ];
+    }
+
+    protected function recordBotMessage(Conversation $conversation, string $body): void
+    {
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'report_id' => $conversation->report_id,
+            'wa_message_id' => 'tg_out_'.time().'_'.Str::random(6),
+            'direction' => 'outbound',
+            'message_type' => 'text',
+            'body' => $body,
+            'process_status' => 'processed',
+            'created_at' => now(),
+        ]);
     }
 
     /**
@@ -306,9 +539,10 @@ class IncidentReportService
         float $latitude,
         float $longitude,
         string $chatId,
-        string $senderName
+        string $senderName,
+        ?array $analysis = null
     ): Report {
-        $analysis = $this->geminiService->extractReport($textData);
+        $analysis ??= $this->geminiService->extractReport($textData);
 
         $reportCode = 'SIRINE-'.date('Ymd').'-'.strtoupper(Str::random(4));
 
@@ -342,6 +576,7 @@ class IncidentReportService
             'report_id' => $report->id,
             'conversation_status' => 'completed',
             'current_question' => null,
+            'report_draft' => null,
             'last_message_at' => now(),
         ]);
 
@@ -381,7 +616,7 @@ class IncidentReportService
             ."Rute Google Maps: {$mapsRouteUrl}\n\n"
             .'Laporan ini telah masuk ke dashboard petugas untuk segera diverifikasi dan ditindaklanjuti. Terima kasih atas laporan Anda.';
 
-        $this->telegramService->sendMessage($chatId, $responseText);
+        $this->telegramService->sendMessage($chatId, $responseText, null, 'HTML', ['remove_keyboard' => true]);
 
         Message::create([
             'conversation_id' => $conversation->id,

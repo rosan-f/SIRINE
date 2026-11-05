@@ -8,6 +8,7 @@ use App\Services\IncidentReportService;
 use App\Services\Telegram\TelegramService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -60,9 +61,24 @@ test('gemini service recognizes emergency reports and rejects unrelated requests
         ->toBeFalse();
 });
 
+test('telegram service includes a location request keyboard in bot replies', function () {
+    config(['services.telegram.bot_token' => 'test-token']);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.telegram.org/*' => Http::response(['ok' => true]),
+    ]);
+
+    (new TelegramService)->sendMessage('12345', 'Kirim lokasi kejadian.', null, 'HTML', [
+        'keyboard' => [[['text' => '📍 Kirim Lokasi', 'request_location' => true]]],
+        'resize_keyboard' => true,
+    ]);
+
+    Http::assertSent(fn ($request): bool => data_get($request->data(), 'reply_markup.keyboard.0.0.request_location') === true);
+});
+
 test('incident report service processes 2-step flow: location then template', function () {
     $telegramMock = Mockery::mock(TelegramService::class);
-    $telegramMock->shouldReceive('sendMessage')->twice()->andReturn(['ok' => true]);
+    $telegramMock->shouldReceive('sendMessage')->times(5)->andReturn(['ok' => true]);
 
     $geminiService = new GeminiService;
     $service = new IncidentReportService($telegramMock, $geminiService);
@@ -111,10 +127,44 @@ test('incident report service processes 2-step flow: location then template', fu
         ],
     ];
 
-    $reportStep2 = $service->handleIncomingTelegramUpdate($templateUpdate);
+    $previewStep = $service->handleIncomingTelegramUpdate($templateUpdate);
+    expect($previewStep)->toBeNull();
+    $this->assertDatabaseCount('reports', 0);
+
+    $correctionAction = $templateUpdate;
+    $correctionAction['update_id'] = 1003;
+    $correctionAction['message']['message_id'] = 3;
+    $correctionAction['message']['text'] = '✏️ Koreksi';
+    expect($service->handleIncomingTelegramUpdate($correctionAction))->toBeNull();
+
+    $correctedTextUpdate = $templateUpdate;
+    $correctedTextUpdate['update_id'] = 1004;
+    $correctedTextUpdate['message']['message_id'] = 4;
+    $correctedTextUpdate['message']['text'] = "Jenis Kejadian: Kecelakaan lalu lintas\n"
+        ."Patokan/Alamat: Simpang 4 dekat pasar\n"
+        ."Keterangan: Mobil menabrak pagar dan menghalangi jalan\n"
+        .'Kondisi Korban: Nihil';
+    expect($service->handleIncomingTelegramUpdate($correctedTextUpdate))->toBeNull();
+
+    $confirmationUpdate = [
+        'update_id' => 1005,
+        'message' => [
+            'message_id' => 5,
+            'from' => [
+                'first_name' => 'Rausyan',
+                'username' => 'rausyan_dev',
+            ],
+            'chat' => [
+                'id' => $chatId,
+            ],
+            'text' => '✅ Konfirmasi Laporan',
+        ],
+    ];
+
+    $reportStep2 = $service->handleIncomingTelegramUpdate($confirmationUpdate);
 
     expect($reportStep2)->toBeInstanceOf(Report::class)
-        ->and($reportStep2->incident_type)->toBe('Kebakaran toko kelontong')
+        ->and($reportStep2->incident_type)->toBe('Kecelakaan lalu lintas')
         ->and((float) $reportStep2->latitude)->toBe(4.47123)
         ->and((float) $reportStep2->longitude)->toBe(97.96541)
         ->and($reportStep2->location_source)->toBe('gps')
@@ -123,17 +173,19 @@ test('incident report service processes 2-step flow: location then template', fu
     // Pastikan data tersimpan di database
     $this->assertDatabaseHas('reports', [
         'id' => $reportStep2->id,
-        'incident_type' => 'Kebakaran toko kelontong',
+        'incident_type' => 'Kecelakaan lalu lintas',
         'latitude' => 4.47123,
         'longitude' => 97.96541,
     ]);
 });
 
 test('voice note transcript is saved as the incoming message text', function () {
+    Storage::fake('local');
+
     $telegramMock = Mockery::mock(TelegramService::class);
     $telegramMock->shouldReceive('getFile')->once()->with('voice-file-id')->andReturn(['file_path' => 'voice/file.oga']);
     $telegramMock->shouldReceive('downloadFile')->once()->with('voice/file.oga')->andReturn('voice-binary');
-    $telegramMock->shouldReceive('sendMessage')->once()->andReturn(['ok' => true]);
+    $telegramMock->shouldReceive('sendMessage')->twice()->andReturn(['ok' => true]);
 
     $geminiMock = Mockery::mock(GeminiService::class);
     $geminiMock->shouldReceive('transcribeAudio')->once()->with('voice-binary', 'audio/ogg')->andReturn('Terjadi kebakaran di rumah saya');
@@ -184,7 +236,7 @@ test('voice note without a transcript is not processed as a report', function ()
     $telegramMock = Mockery::mock(TelegramService::class);
     $telegramMock->shouldReceive('getFile')->once()->with('voice-file-id')->andReturn(['file_path' => 'voice/file.oga']);
     $telegramMock->shouldReceive('downloadFile')->once()->with('voice/file.oga')->andReturn('voice-binary');
-    $telegramMock->shouldReceive('sendMessage')->once()->andReturn(['ok' => true]);
+    $telegramMock->shouldReceive('sendMessage')->twice()->andReturn(['ok' => true]);
 
     $geminiMock = Mockery::mock(GeminiService::class);
     $geminiMock->shouldReceive('transcribeAudio')->once()->with('voice-binary', 'audio/ogg')->andReturnNull();
@@ -201,6 +253,38 @@ test('voice note without a transcript is not processed as a report', function ()
     ]);
 
     $this->assertDatabaseCount('messages', 0);
+    $this->assertDatabaseCount('reports', 0);
+});
+
+test('reporter can cancel an in-progress report without creating a report', function () {
+    $telegramMock = Mockery::mock(TelegramService::class);
+    $telegramMock->shouldReceive('sendMessage')->twice()->andReturn(['ok' => true]);
+
+    $geminiMock = Mockery::mock(GeminiService::class);
+    $geminiMock->shouldReceive('isPotentialEmergencyReport')->once()->with('Ada kebakaran di rumah saya')->andReturnTrue();
+
+    $service = new IncidentReportService($telegramMock, $geminiMock);
+    $service->handleIncomingTelegramUpdate([
+        'message' => [
+            'message_id' => 81,
+            'from' => ['first_name' => 'Rina'],
+            'chat' => ['id' => 12345],
+            'text' => 'Ada kebakaran di rumah saya',
+        ],
+    ]);
+    $service->handleIncomingTelegramUpdate([
+        'message' => [
+            'message_id' => 82,
+            'from' => ['first_name' => 'Rina'],
+            'chat' => ['id' => 12345],
+            'text' => '✖️ Batalkan',
+        ],
+    ]);
+
+    $this->assertDatabaseHas('conversations', [
+        'conversation_status' => 'completed',
+        'current_question' => null,
+    ]);
     $this->assertDatabaseCount('reports', 0);
 });
 

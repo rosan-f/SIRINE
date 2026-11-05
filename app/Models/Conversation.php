@@ -13,6 +13,7 @@ class Conversation extends Model
         'report_id',
         'conversation_status',
         'current_question',
+        'report_draft',
         'followup_count',
         'last_message_at',
     ];
@@ -22,6 +23,7 @@ class Conversation extends Model
         return [
             'followup_count' => 'integer',
             'last_message_at' => 'datetime',
+            'report_draft' => 'array',
         ];
     }
 

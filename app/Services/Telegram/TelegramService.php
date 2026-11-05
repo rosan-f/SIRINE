@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 class TelegramService
 {
     protected string $botToken;
+
     protected string $baseUrl;
 
     public function __construct()
@@ -19,10 +20,16 @@ class TelegramService
     /**
      * Kirim pesan teks ke chat Telegram.
      */
-    public function sendMessage(string|int $chatId, string $text, ?int $replyToMessageId = null, ?string $parseMode = 'HTML'): ?array
-    {
+    public function sendMessage(
+        string|int $chatId,
+        string $text,
+        ?int $replyToMessageId = null,
+        ?string $parseMode = 'HTML',
+        ?array $replyMarkup = null
+    ): ?array {
         if (empty($this->botToken)) {
             Log::warning('Telegram bot token belum disetel di .env');
+
             return null;
         }
 
@@ -41,19 +48,24 @@ class TelegramService
             ];
         }
 
+        if ($replyMarkup !== null) {
+            $params['reply_markup'] = $replyMarkup;
+        }
+
         try {
             $response = Http::withoutVerifying()->timeout(10)->post("{$this->baseUrl}/sendMessage", $params);
 
             // Jika gagal karena parse mode/formatting, kirim ulang sebagai plain text
             if (! $response->successful() && isset($params['parse_mode'])) {
-                Log::warning('Telegram formatting error, retrying without parse_mode: ' . $response->body());
+                Log::warning('Telegram formatting error, retrying without parse_mode: '.$response->body());
                 unset($params['parse_mode']);
                 $response = Http::withoutVerifying()->timeout(10)->post("{$this->baseUrl}/sendMessage", $params);
             }
 
             return $response->json();
         } catch (\Throwable $e) {
-            Log::error('Gagal mengirim pesan Telegram: ' . $e->getMessage());
+            Log::error('Gagal mengirim pesan Telegram: '.$e->getMessage());
+
             return null;
         }
     }
@@ -72,7 +84,7 @@ class TelegramService
                 return $response->json('result');
             }
         } catch (\Throwable $e) {
-            Log::error('Gagal mengambil file Telegram: ' . $e->getMessage());
+            Log::error('Gagal mengambil file Telegram: '.$e->getMessage());
         }
 
         return null;
@@ -91,7 +103,7 @@ class TelegramService
                 return $response->body();
             }
         } catch (\Throwable $e) {
-            Log::error('Gagal mengunduh file Telegram: ' . $e->getMessage());
+            Log::error('Gagal mengunduh file Telegram: '.$e->getMessage());
         }
 
         return null;
@@ -117,7 +129,7 @@ class TelegramService
                 return $response->json('result', []);
             }
         } catch (\Throwable $e) {
-            Log::error('Gagal getUpdates Telegram: ' . $e->getMessage());
+            Log::error('Gagal getUpdates Telegram: '.$e->getMessage());
         }
 
         return [];
@@ -129,12 +141,13 @@ class TelegramService
     public function setWebhook(string $url, ?string $secretToken = null): array
     {
         $params = ['url' => $url];
-        if (!empty($secretToken)) {
+        if (! empty($secretToken)) {
             $params['secret_token'] = $secretToken;
         }
 
         try {
             $response = Http::withoutVerifying()->timeout(10)->post("{$this->baseUrl}/setWebhook", $params);
+
             return $response->json() ?? [];
         } catch (\Throwable $e) {
             return ['ok' => false, 'description' => $e->getMessage()];
@@ -148,6 +161,7 @@ class TelegramService
     {
         try {
             $response = Http::withoutVerifying()->timeout(10)->post("{$this->baseUrl}/deleteWebhook");
+
             return $response->json() ?? [];
         } catch (\Throwable $e) {
             return ['ok' => false, 'description' => $e->getMessage()];
