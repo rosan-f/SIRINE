@@ -1,11 +1,10 @@
 import { Form, Head } from '@inertiajs/react';
+import AuthSubmitButton from '@/components/auth-submit-button';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
@@ -18,7 +17,8 @@ export default function Register({ passwordRules }: Props) {
         <>
             <Head title="Daftar" />
             <Form
-                {...store.form()}
+                action={store.url()}
+                method="post"
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 className="flex flex-col gap-5"
@@ -91,15 +91,14 @@ export default function Register({ passwordRules }: Props) {
                                 />
                             </div>
 
-                            <Button
+                            <AuthSubmitButton
                                 type="submit"
-                                className="mt-1 h-11 w-full rounded-lg bg-sg-mint text-sm font-semibold text-sg-900 shadow-sm hover:bg-sg-mint-300"
                                 tabIndex={5}
                                 data-test="register-user-button"
+                                processing={processing}
                             >
-                                {processing && <Spinner />}
                                 Buat akun
-                            </Button>
+                            </AuthSubmitButton>
                         </div>
 
                         <div className="text-center text-[13px] text-[#657269]">

@@ -1,12 +1,11 @@
 import { Form, Head } from '@inertiajs/react';
+import AuthSubmitButton from '@/components/auth-submit-button';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
@@ -28,7 +27,8 @@ export default function Login({ status, canResetPassword }: Props) {
             )}
 
             <Form
-                {...store.form()}
+                action={store.url()}
+                method="post"
                 resetOnSuccess={['password']}
                 className="flex flex-col gap-5"
             >
@@ -94,16 +94,15 @@ export default function Login({ status, canResetPassword }: Props) {
                                 )}
                             </div>
 
-                            <Button
+                            <AuthSubmitButton
                                 type="submit"
-                                className="mt-1 h-11 w-full rounded-lg bg-sg-mint text-sm font-semibold text-sg-900 shadow-sm hover:bg-sg-mint-300"
                                 tabIndex={5}
                                 disabled={processing}
                                 data-test="login-button"
+                                processing={processing}
                             >
-                                {processing && <Spinner />}
                                 Masuk
-                            </Button>
+                            </AuthSubmitButton>
                         </div>
 
                         <div className="text-center text-[13px] text-muted-foreground">

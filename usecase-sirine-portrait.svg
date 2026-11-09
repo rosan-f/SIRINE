@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1680" viewBox="0 0 1200 1680" role="img" aria-labelledby="title description">
+  <title id="title">Use Case Sistem Informasi SIRINE</title>
+  <desc id="description">Diagram use case vertikal dengan aktor Admin dan Pelapor berbentuk stickman.</desc>
+  <rect width="1200" height="1680" fill="#ffffff"/>
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #111111; }
+    .frame { fill: #ffffff; stroke: #111111; stroke-width: 3; }
+    .oval { fill: #ffffff; stroke: #111111; stroke-width: 2.5; }
+    .association { fill: none; stroke: #111111; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .title { font-size: 29px; font-weight: 700; }
+    .label { font-size: 21px; font-weight: 500; }
+    .actor-label { font-size: 21px; font-weight: 600; }
+  </style>
+
+  <!-- System boundary -->
+  <rect class="frame" x="250" y="88" width="700" height="1504" rx="4"/>
+  <rect x="366" y="68" width="468" height="42" fill="#ffffff"/>
+  <text class="title" x="600" y="98" text-anchor="middle">Sistem Informasi SIRINE</text>
+
+  <!-- Associations to Admin use cases -->
+  <path class="association" d="M166 442 H270 V230 M270 230 V830"/>
+  <path class="association" d="M270 230 H310 M270 350 H310 M270 470 H310 M270 590 H310 M270 710 H310 M270 830 H310"/>
+  <!-- Associations to Pelapor use cases -->
+  <path class="association" d="M1034 1130 H930 V950 M930 950 V1430"/>
+  <path class="association" d="M890 950 H930 M890 1070 H930 M890 1190 H930 M890 1310 H930 M890 1430 H930"/>
+
+  <!-- Use cases, arranged as a tall vertical stack -->
+  <g class="label" text-anchor="middle">
+    <ellipse class="oval" cx="600" cy="230" rx="290" ry="42"/><text x="600" y="237">UC-01 Login Admin</text>
+    <ellipse class="oval" cx="600" cy="350" rx="290" ry="42"/><text x="600" y="357">UC-02 Pantau Dashboard dan Bot</text>
+    <ellipse class="oval" cx="600" cy="470" rx="290" ry="42"/><text x="600" y="477">UC-03 Lihat dan Filter Laporan</text>
+    <ellipse class="oval" cx="600" cy="590" rx="290" ry="42"/><text x="600" y="597">UC-04 Lihat Detail Laporan</text>
+    <ellipse class="oval" cx="600" cy="710" rx="290" ry="42"/><text x="600" y="717">UC-05 Lihat Peta Laporan</text>
+    <ellipse class="oval" cx="600" cy="830" rx="290" ry="42"/><text x="600" y="837">UC-06 Ubah Status Laporan</text>
+    <ellipse class="oval" cx="600" cy="950" rx="290" ry="42"/><text x="600" y="957">UC-07 Mulai Pelaporan</text>
+    <ellipse class="oval" cx="600" cy="1070" rx="290" ry="42"/><text x="600" y="1077">UC-08 Kirim Lokasi Kejadian</text>
+    <ellipse class="oval" cx="600" cy="1190" rx="290" ry="42"/><text x="600" y="1197">UC-09 Kirim Laporan Teks</text>
+    <ellipse class="oval" cx="600" cy="1310" rx="290" ry="42"/><text x="600" y="1317">UC-10 Kirim Voice Note</text>
+    <ellipse class="oval" cx="600" cy="1430" rx="290" ry="42"/><text x="600" y="1437">UC-11 Konfirmasi, Koreksi, atau Batalkan Laporan</text>
+  </g>
+
+  <!-- Stickman actors -->
+  <g fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Admin -->
+    <circle cx="125" cy="382" r="20"/>
+    <path d="M125 402 V462 M125 420 L166 442 M125 420 L96 446 M125 462 L101 496 M125 462 L151 496"/>
+    <!-- Pelapor -->
+    <circle cx="1075" cy="1070" r="20"/>
+    <path d="M1075 1090 V1150 M1075 1108 L1034 1130 M1075 1108 L1104 1132 M1075 1150 L1049 1184 M1075 1150 L1101 1184"/>
+  </g>
+  <text class="actor-label" x="125" y="530" text-anchor="middle">Admin</text>
+  <text class="actor-label" x="1075" y="1215" text-anchor="middle">Pelapor</text>
+</svg>
