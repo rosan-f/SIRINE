@@ -21,7 +21,7 @@ export default function AuthLayout({
                 className="pointer-events-none absolute inset-y-0 left-0 hidden h-full lg:block"
                 style={{ width: '56%' }}
             >
-                <path d="M0 0H420C505 0 505 800 420 800H0Z" fill="#406e49" />
+                <path d="M0 0H420C505 0 505 800 420 800H0Z" fill="#0a2b23" />
             </svg>
 
             <aside className="relative z-10 hidden min-h-svh flex-col justify-between overflow-hidden px-12 py-10 text-white lg:flex xl:px-16 xl:py-12">
@@ -75,7 +75,7 @@ export default function AuthLayout({
                 </p>
             </aside>
 
-            <header className="relative isolate overflow-hidden bg-[#406e49] px-6 pt-6 pb-8 text-white lg:hidden">
+            <header className="relative isolate overflow-hidden bg-sg-900 px-6 pt-6 pb-8 text-white lg:hidden">
                 <div aria-hidden="true" className="pointer-events-none absolute -top-24 -right-16 -z-10 size-64 rounded-full border border-white/10" />
                 <div aria-hidden="true" className="pointer-events-none absolute -top-14 -right-6 -z-10 size-40 rounded-full border border-white/10" />
                 <Link
@@ -94,7 +94,7 @@ export default function AuthLayout({
 
             <section className="relative z-10 flex min-h-[calc(100svh-174px)] items-center justify-center px-6 py-10 sm:px-10 lg:col-start-2 lg:min-h-svh lg:px-12 lg:py-14 xl:px-20">
                 <div className="w-full max-w-sm" style={{ width: '100%', maxWidth: '25rem' }}>
-                    <div className="mb-7 flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[#406e49] uppercase">
+                    <div className="mb-7 flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-sg-700 uppercase">
                         <LockKeyhole className="size-3.5" />
                         Akses aman
                     </div>

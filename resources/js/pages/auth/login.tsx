@@ -46,7 +46,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="nama@email.com"
-                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-[#406e49] focus-visible:bg-white focus-visible:ring-[#406e49]/15"
+                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-sg-600 focus-visible:bg-white focus-visible:ring-sg-600/15"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -64,7 +64,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Masukkan kata sandi"
-                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-[#406e49] focus-visible:bg-white focus-visible:ring-[#406e49]/15"
+                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-sg-600 focus-visible:bg-white focus-visible:ring-sg-600/15"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -86,7 +86,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                 {canResetPassword && (
                                     <TextLink
                                         href={request()}
-                                        className="text-xs font-medium text-[#406e49] hover:text-[#2f5236]"
+                                        className="text-xs font-medium text-sg-700 hover:text-sg-900"
                                         tabIndex={4}
                                     >
                                         Lupa kata sandi?
@@ -96,7 +96,7 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-1 h-11 w-full rounded-lg bg-[#406e49] text-sm font-semibold text-white shadow-sm hover:bg-[#355d3d]"
+                                className="mt-1 h-11 w-full rounded-lg bg-sg-mint text-sm font-semibold text-sg-900 shadow-sm hover:bg-sg-mint-300"
                                 tabIndex={5}
                                 disabled={processing}
                                 data-test="login-button"
@@ -111,7 +111,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             <TextLink
                                 href={register()}
                                 tabIndex={6}
-                                className="text-[#406e49] hover:text-[#2f5236]"
+                                className="text-sg-700 hover:text-sg-900"
                             >
                                 Daftar
                             </TextLink>
