@@ -8,11 +8,13 @@ import {
     RefreshCw,
     Square,
     Terminal,
+    Trash2,
     Truck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { ActivityTimeline, type ActivityEvent } from '@/components/activity-timeline';
+import { clearLogs as clearPollerLogs } from '@/actions/App/Http/Controllers/DashboardController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,6 +63,7 @@ export default function Dashboard({
     const [logs, setLogs] = useState<string[]>(poller.logs);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isClearingLogs, setIsClearingLogs] = useState(false);
     const logContainerRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll logs ke paling bawah ketika logs bertambah
@@ -130,6 +133,15 @@ export default function Dashboard({
         } finally {
             setIsRefreshing(false);
         }
+    };
+
+    const handleClearLogs = () => {
+        setIsClearingLogs(true);
+        router.delete(clearPollerLogs.url(), {
+            preserveScroll: true,
+            onSuccess: () => setLogs([]),
+            onFinish: () => setIsClearingLogs(false),
+        });
     };
 
     const topCards = [
@@ -319,7 +331,7 @@ export default function Dashboard({
                                         </CardDescription>
                                     </div>
 
-                                    {/* Action Buttons: Start, Stop, Refresh */}
+                                    {/* Action Buttons: Start, Stop, Clear, Refresh */}
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Button
                                             type="button"
@@ -342,6 +354,18 @@ export default function Dashboard({
                                         >
                                             <Square className="size-3.5 fill-current" />
                                             {isActionLoading && isRunning ? 'Menghentikan…' : 'Hentikan'}
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={handleClearLogs}
+                                            disabled={logs.length === 0 || isClearingLogs}
+                                            className="h-9 cursor-pointer gap-1.5 border-destructive/20 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                        >
+                                            <Trash2 className={cn('size-3.5', isClearingLogs && 'animate-pulse')} />
+                                            Bersihkan
                                         </Button>
 
                                         <Button
@@ -398,7 +422,7 @@ export default function Dashboard({
                                         })
                                     ) : (
                                         <div className="text-neutral-500 italic">
-                                            Belum ada log tercatat. Tekan Mulai Poller untuk menjalankan bot.
+                                            Belum ada log tercatat. Aktivitas baru akan muncul di sini.
                                         </div>
                                     )}
                                 </div>

@@ -103,7 +103,7 @@ class DashboardController extends Controller
         $logPath = storage_path('logs/telegram_poll.log');
         $timestamp = now()->format('Y-m-d H:i:s');
         $actorName = auth()->user()?->name ?? 'Petugas';
-        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Memulai daemon polling dari dashboard oleh {$actorName}.\n", FILE_APPEND);
+        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Memulai daemon polling dari dashboard oleh {$actorName}.\n", FILE_APPEND | LOCK_EX);
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $cmd = 'start /B php artisan telegram:poll';
@@ -139,9 +139,23 @@ class DashboardController extends Controller
         $logPath = storage_path('logs/telegram_poll.log');
         $timestamp = now()->format('Y-m-d H:i:s');
         $actorName = auth()->user()?->name ?? 'Petugas';
-        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Daemon polling dihentikan oleh {$actorName}.\n", FILE_APPEND);
+        @file_put_contents($logPath, "[{$timestamp}] [ACTION] Daemon polling dihentikan oleh {$actorName}.\n", FILE_APPEND | LOCK_EX);
 
         return redirect()->back()->with('success', 'Bot Poller Telegram telah dihentikan.');
+    }
+
+    /**
+     * Clear the Telegram poller log file.
+     */
+    public function clearLogs(): RedirectResponse
+    {
+        $logPath = storage_path('logs/telegram_poll.log');
+
+        if (file_put_contents($logPath, '', LOCK_EX) === false) {
+            return redirect()->back()->with('error', 'Log poller gagal dibersihkan.');
+        }
+
+        return redirect()->back()->with('success', 'Log poller berhasil dibersihkan.');
     }
 
     /**
@@ -202,17 +216,13 @@ class DashboardController extends Controller
     protected function getRecentLogs(int $lines = 35): array
     {
         $logPath = storage_path('logs/telegram_poll.log');
-        if (! file_exists($logPath)) {
-            return [
-                '[INFO] File log belum dibuat. Tekan tombol Mulai Poller untuk menjalankan bot Telegram.',
-            ];
+        if (! is_file($logPath) || ! is_readable($logPath)) {
+            return [];
         }
 
         $content = file($logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if (empty($content)) {
-            return [
-                '[INFO] Menunggu log pertama dari bot Telegram...',
-            ];
+            return [];
         }
 
         return array_slice($content, -$lines);

@@ -95,6 +95,6 @@ class TelegramPollCommand extends Command
         $logPath = storage_path('logs/telegram_poll.log');
         $clean = strip_tags($message);
         $timestamp = now()->format('Y-m-d H:i:s');
-        @file_put_contents($logPath, "[{$timestamp}] {$clean}\n", FILE_APPEND);
+        @file_put_contents($logPath, "[{$timestamp}] {$clean}\n", FILE_APPEND | LOCK_EX);
     }
 }

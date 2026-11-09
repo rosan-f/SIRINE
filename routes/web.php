@@ -13,6 +13,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('poller/start', [DashboardController::class, 'startPoller'])->name('poller.start');
     Route::post('poller/stop', [DashboardController::class, 'stopPoller'])->name('poller.stop');
     Route::get('poller/logs', [DashboardController::class, 'getLogs'])->name('poller.logs');
+    Route::delete('poller/logs', [DashboardController::class, 'clearLogs'])->name('poller.logs.clear');
 
     Route::get('laporan', [ReportController::class, 'index'])->name('reports.index');
     Route::get('laporan/{report}', [ReportController::class, 'show'])->name('reports.show');
