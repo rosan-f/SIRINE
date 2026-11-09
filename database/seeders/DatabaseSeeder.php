@@ -25,6 +25,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $this->call(ReportSeeder::class);
+        $this->call(VariedReportSeeder::class);
     }
 }
