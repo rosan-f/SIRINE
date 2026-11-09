@@ -21,13 +21,13 @@ export default function Register({ passwordRules }: Props) {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-5"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-5">
+                        <div className="grid gap-4.5">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Nama lengkap</Label>
+                                <Label htmlFor="name" className="text-[13px] font-medium">Nama lengkap</Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -37,13 +37,13 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Nama lengkap"
-                                    className="h-10"
+                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-[#406e49] focus-visible:bg-white focus-visible:ring-[#406e49]/15"
                                 />
                                 <InputError message={errors.name} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Alamat email</Label>
+                                <Label htmlFor="email" className="text-[13px] font-medium">Alamat email</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -52,13 +52,13 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="email"
                                     name="email"
                                     placeholder="nama@email.com"
-                                    className="h-10"
+                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-[#406e49] focus-visible:bg-white focus-visible:ring-[#406e49]/15"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">Kata sandi</Label>
+                                <Label htmlFor="password" className="text-[13px] font-medium">Kata sandi</Label>
                                 <PasswordInput
                                     id="password"
                                     required
@@ -67,13 +67,13 @@ export default function Register({ passwordRules }: Props) {
                                     name="password"
                                     placeholder="Buat kata sandi"
                                     passwordrules={passwordRules}
-                                    className="h-10"
+                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-[#406e49] focus-visible:bg-white focus-visible:ring-[#406e49]/15"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
+                                <Label htmlFor="password_confirmation" className="text-[13px] font-medium">
                                     Konfirmasi kata sandi
                                 </Label>
                                 <PasswordInput
@@ -84,7 +84,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password_confirmation"
                                     placeholder="Ulangi kata sandi"
                                     passwordrules={passwordRules}
-                                    className="h-10"
+                                    className="auth-input h-11 rounded-lg border-transparent bg-[#f2f4f2] px-3.5 text-[#222a24] shadow-none placeholder:text-[#8a938b] focus-visible:border-[#406e49] focus-visible:bg-white focus-visible:ring-[#406e49]/15"
                                 />
                                 <InputError
                                     message={errors.password_confirmation}
@@ -93,7 +93,7 @@ export default function Register({ passwordRules }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-1 h-10 w-full"
+                                className="mt-1 h-11 w-full rounded-lg bg-[#406e49] text-sm font-semibold text-white shadow-sm hover:bg-[#355d3d]"
                                 tabIndex={5}
                                 data-test="register-user-button"
                             >
@@ -102,9 +102,13 @@ export default function Register({ passwordRules }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-center text-[13px] text-[#657269]">
                             Sudah punya akun?{' '}
-                            <TextLink href={login()} tabIndex={6}>
+                            <TextLink
+                                href={login()}
+                                tabIndex={6}
+                                className="text-[#406e49] hover:text-[#2f5236]"
+                            >
                                 Masuk
                             </TextLink>
                         </div>

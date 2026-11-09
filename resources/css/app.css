@@ -147,6 +147,15 @@
     }
 }
 
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #222a24;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    transition: background-color 99999s ease-out 0s;
+}
+
 /*
  * SIRINE landing page — token & animasi.
  * Tempel isi file ini ke bagian bawah resources/css/app.css
