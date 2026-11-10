@@ -1,6 +1,8 @@
+<?php
+
 use App\Models\Report;
-use App\Models\ReportHistory;
 use App\Models\Reporter;
+use App\Models\ReportHistory;
 use App\Models\User;
 
 test('guests are redirected before viewing activity history', function () {
@@ -61,5 +63,5 @@ test('authenticated users can view report creation and handling activity', funct
                 && $events->contains(fn ($event) => $event['id'] === 'report-'.$report->id
                     && $event['type'] === 'report_received'
                     && $event['description'] === 'Voice note Telegram')
-        );
+            ));
 });

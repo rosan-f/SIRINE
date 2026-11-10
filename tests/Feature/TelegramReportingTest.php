@@ -327,6 +327,75 @@ test('authenticated user can view report show detail page with maps and route in
         );
 });
 
+test('authenticated user sees only reports with coordinates on the map', function () {
+    $user = User::factory()->create();
+    $reporter = Reporter::create([
+        'name' => 'Ahmad',
+        'whatsapp_number' => '123456789',
+    ]);
+
+    Report::create([
+        'report_code' => 'SIRINE-MAP-001',
+        'reporter_id' => $reporter->id,
+        'incident_type' => 'Banjir',
+        'latitude' => -5.1802,
+        'longitude' => 97.1408,
+        'report_status' => 'baru_diterima',
+    ]);
+    Report::create([
+        'report_code' => 'SIRINE-MAP-002',
+        'reporter_id' => $reporter->id,
+        'incident_type' => 'Pohon tumbang',
+        'latitude' => null,
+        'longitude' => null,
+        'report_status' => 'baru_diterima',
+    ]);
+
+    $response = $this->actingAs($user)->get(route('reports.map'));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page->component('reports/map')
+            ->has('reports', 1)
+            ->where('reports.0.code', 'SIRINE-MAP-001')
+            ->where('reports.0.latitude', -5.1802)
+            ->where('reports.0.longitude', 97.1408)
+        );
+});
+
+test('telegram start command creates a reporter and requests the incident location', function () {
+    $telegramMock = Mockery::mock(TelegramService::class);
+    $telegramMock->shouldReceive('sendMessage')
+        ->once()
+        ->with('987654321', Mockery::on(fn ($message) => str_contains($message, 'Selamat datang')), null, 'HTML', [
+            'keyboard' => [
+                [['text' => '📍 Kirim Lokasi', 'request_location' => true]],
+                [['text' => '✖️ Batalkan']],
+            ],
+            'resize_keyboard' => true,
+            'one_time_keyboard' => false,
+            'input_field_placeholder' => 'Pilih Kirim Lokasi untuk melanjutkan',
+        ])
+        ->andReturn(['ok' => true]);
+
+    $service = new IncidentReportService($telegramMock, new GeminiService);
+    $result = $service->handleIncomingTelegramUpdate([
+        'update_id' => 2001,
+        'message' => [
+            'message_id' => 1,
+            'from' => ['first_name' => 'Rina', 'last_name' => 'Putri'],
+            'chat' => ['id' => 987654321],
+            'text' => '/start',
+        ],
+    ]);
+
+    expect($result)->toBeNull();
+    $this->assertDatabaseHas('reporters', [
+        'whatsapp_number' => '987654321',
+        'name' => 'Rina Putri',
+    ]);
+    $this->assertDatabaseCount('reports', 0);
+});
+
 test('operator can confirm report and send dispatch notification to telegram', function () {
     $telegramMock = Mockery::mock(TelegramService::class);
     $telegramMock->shouldReceive('sendMessage')
